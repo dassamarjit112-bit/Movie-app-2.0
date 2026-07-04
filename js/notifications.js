@@ -26,13 +26,29 @@ const NotificationSystem = (() => {
     await _registerServiceWorker();
     _loadStoredNotifications();
     _injectPanel();
-    _schedulePeriodic();
 
     // Show permission modal on first open (after a tiny delay for page to load)
     await _checkPermission();
 
-    // Start real live score polling (wait for SportsAPI to be ready)
-    setTimeout(() => _startRealLiveScorePolling(), 5000);
+    // Intercept OneSignal pushes to add to the local panel
+    if (window.OneSignal) {
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.Notifications.addEventListener('foregroundWillDisplay', (event) => {
+          const notif = event.notification;
+          _addToPanel({
+            id: notif.notificationId || Date.now().toString(),
+            title: notif.title || 'New Notification',
+            body: notif.body || '',
+            type: notif.title && notif.title.toLowerCase().includes('score') ? 'score' : 'update',
+            time: Date.now(),
+            read: false,
+            icon: notif.title && notif.title.toLowerCase().includes('score') ? '⚽' : '🔔',
+            meta: notif.additionalData || {},
+          });
+        });
+      });
+    }
   }
 
   // ── Service Worker ──
@@ -394,193 +410,7 @@ const NotificationSystem = (() => {
     } catch(e) { _notifications = []; }
   }
 
-  // ── Real Live Score Polling using SportsAPI (ESPN) ──
-  async function _startRealLiveScorePolling() {
-    await _fetchAndNotifyLiveScores();
-    await _fetchAndNotifyNewReleases();
-    // Poll live scores every 10 minutes
-    _liveMatchInterval = setInterval(async () => {
-      await _fetchAndNotifyLiveScores();
-    }, 10 * 60 * 1000);
-    // Poll new releases every 4 hours
-    setInterval(async () => {
-      await _fetchAndNotifyNewReleases();
-    }, 4 * 60 * 60 * 1000);
-  }
-
-  async function _fetchAndNotifyNewReleases() {
-    if (!window.TMDB) return;
-    try {
-      const lastShown = parseInt(localStorage.getItem('cs_notif_last_release') || '0');
-      const now = Date.now();
-      if (now - lastShown < 4 * 60 * 60 * 1000) return; // Max once per 4h
-
-      let items = [];
-      try { items = await window.TMDB.fetchNowPlaying?.() || []; } catch(e) {}
-      if (!items.length) {
-        try { items = await window.TMDB.fetchTrending?.() || []; } catch(e) {}
-      }
-      if (!items || !items.length) return;
-
-      const pick = items[Math.floor(Math.random() * Math.min(5, items.length))];
-      if (!pick) return;
-
-      const title = pick.title || pick.name || 'New Release';
-      const rating = pick.vote_average ? pick.vote_average.toFixed(1) : (pick.imdb || 'N/A');
-      const genre = pick.genre || (pick.genre_ids ? '' : '');
-      const poster = pick.poster_path
-        ? `https://image.tmdb.org/t/p/w500${pick.poster_path}`
-        : (pick.poster || pick.poster_url || '');
-      const type = pick.media_type === 'tv' || pick.type === 'series' ? 'Series' : 'Movie';
-
-      const notifTitle = `🎬 New ${type}: ${title}`;
-      const notifBody = `⭐ ${rating} • Now streaming on SD CineStream • Tap to watch`;
-
-      _showAndroidNotification({ title: notifTitle, body: notifBody, type: 'movie', image: poster, url: '#home', tag: `release-${pick.id || Date.now()}` });
-      _addToPanel({
-        id: `tmdb-${pick.id || Date.now()}`,
-        title: notifTitle,
-        body: notifBody,
-        type: type === 'Series' ? 'series' : 'movie',
-        time: now,
-        read: false,
-        icon: type === 'Series' ? '📺' : '🎬',
-        meta: { ...pick, poster },
-      });
-
-      localStorage.setItem('cs_notif_last_release', String(now));
-    } catch (e) {
-      console.warn('[Notif] TMDB release fetch failed:', e);
-    }
-  }
-
-  async function _fetchAndNotifyLiveScores() {
-    if (!window.SportsAPI) return;
-    try {
-      const matches = await window.SportsAPI.getLiveMatches();
-      if (!matches || !matches.length) return;
-
-      const now = Date.now();
-
-      matches.forEach(match => {
-        const id = match.matchId;
-        const prev = _liveMatchCache[id];
-
-        // ── Notify when a scheduled game is about to start (within 5 min) ──
-        if (match.isScheduled && !_announcedUpcoming[id]) {
-          const startMs = new Date(match.rawDate).getTime();
-          const minsUntil = (startMs - now) / 60000;
-          if (minsUntil >= -2 && minsUntil <= 5) {
-            _announcedUpcoming[id] = true;
-            const icon = match.tournamentIcon || '⚽';
-            const title = `${icon} ${match.tournament} — Starting Now!`;
-            const body = `${match.homeTeam} vs ${match.awayTeam} • ${match.matchTime} — Tap to watch live`;
-            _showAndroidNotification({ title, body, type: 'score', tag: `start-${id}`, url: '#sports' });
-            _addToPanel({ id: `start-${id}`, title, body, type: 'score', time: now, read: false, icon, meta: match });
-          }
-        }
-
-        // ── Notify for live score changes ──
-        if (match.isLive) {
-          const scoreKey = `${match.homeScore}-${match.awayScore}`;
-
-          if (!prev) {
-            // First time we see this live match — announce it
-            const icon = match.tournamentIcon || '⚽';
-            const title = `${icon} LIVE: ${match.homeTeam} vs ${match.awayTeam}`;
-            const body = `Score: ${match.score} • ${match.status} • ${match.tournament}`;
-            _showAndroidNotification({ title, body, type: 'score', tag: `live-${id}`, url: '#sports' });
-            _addToPanel({ id: `live-${id}-${now}`, title, body, type: 'score', time: now, read: false, icon, meta: match });
-          } else if (prev.scoreKey !== scoreKey) {
-            // Score changed — GOAL!
-            const icon = match.tournamentIcon || '⚽';
-            const title = `${icon} GOAL! ${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam}`;
-            const body = `${match.status} • ${match.tournament} — Tap to watch the replay`;
-            _showAndroidNotification({ title, body, type: 'score', tag: `goal-${id}`, url: '#sports' });
-            _addToPanel({ id: `goal-${id}-${now}`, title, body, type: 'score', time: now, read: false, icon, meta: match, isGoal: true });
-          }
-
-          _liveMatchCache[id] = { scoreKey };
-        }
-
-        // ── Notify when a match just ended ──
-        if (match.isFinished && prev && !prev.finished) {
-          const icon = match.tournamentIcon || '⚽';
-          const title = `${icon} Full Time: ${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam}`;
-          const body = `${match.tournament} — Match has ended`;
-          _showAndroidNotification({ title, body, type: 'score', tag: `ft-${id}`, url: '#sports' });
-          _addToPanel({ id: `ft-${id}`, title, body, type: 'score', time: now, read: false, icon, meta: match });
-          _liveMatchCache[id] = { ...(_liveMatchCache[id] || {}), finished: true };
-        }
-      });
-    } catch (e) {
-      console.warn('[Notif] Live score fetch failed:', e);
-    }
-  }
-
-  // ── New Releases Scheduler ──
-  function _schedulePeriodic() {
-    const lastShown = parseInt(localStorage.getItem('cs_notif_last_release') || '0');
-    const now = Date.now();
-    const fourHoursMs = 4 * 60 * 60 * 1000;
-
-    if (now - lastShown > fourHoursMs) {
-      setTimeout(() => _sendNewReleaseNotification(), 10000);
-      localStorage.setItem('cs_notif_last_release', String(now));
-    }
-
-    // Schedule for next interval
-    setTimeout(() => _schedulePeriodic(), fourHoursMs);
-  }
-
-  async function _sendNewReleaseNotification(preselectedRelease) {
-    let release = preselectedRelease;
-
-    // Try to fetch from TMDB first for real content
-    if (!release && window.TMDB && window.TMDB.isConfigured()) {
-      try {
-        const type = Math.random() > 0.5 ? 'movie' : 'tv';
-        let items = [];
-        if (type === 'movie') {
-          items = await window.TMDB.fetchNowPlaying();
-        } else {
-          items = await window.TMDB.fetchTVSeries();
-        }
-        if (items && items.length > 0) {
-          release = items[Math.floor(Math.random() * Math.min(10, items.length))];
-        }
-      } catch (e) {
-        console.warn('Failed to fetch TMDB releases for notification:', e);
-      }
-    }
-
-    if (!release) {
-      release = NEW_RELEASES[Math.floor(Math.random() * NEW_RELEASES.length)];
-    }
-
-    const title = `🎬 New ${release.type === 'series' ? 'Series' : 'Movie'}: ${release.title}`;
-    const rating = release.imdb || release.rating || 'N/A';
-    const descText = release.description || release.desc || 'Now Streaming on CineStream';
-    const body = `${descText.substring(0, 60)}${descText.length > 60 ? '...' : ''} • ⭐ ${rating} • ${release.genre || 'Drama'}`;
-
-    _showAndroidNotification({
-      title, body, type: 'movie',
-      image: release.poster,
-      url: `/#home`,
-      tag: `release-${release.id || Date.now()}`,
-    });
-
-    _addToPanel({
-      id: `release-${release.id || Date.now()}-${Date.now()}`,
-      title, body,
-      type: 'movie',
-      time: Date.now(),
-      read: false,
-      icon: '🎬',
-      meta: release,
-    });
-  }
-
+  // (Local background polling for scores and movies has been removed in favor of OneSignal Push)
   // ── Manual send (for demo / testing) ──
   function sendMovieNotification(release) {
     _sendNewReleaseNotification(release && release.type ? release : null);
