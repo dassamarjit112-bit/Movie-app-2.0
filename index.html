@@ -15,7 +15,12 @@
     OneSignalDeferred.push(async function(OneSignal) {
       await OneSignal.init({
         appId: "f7ade4f1-a755-4469-a204-46f57f451a7e",
+        safari_web_id: "web.onesignal.auto.37e682f0-44ba-408e-8045-bbc89f9e01bb",
+        notifyButton: {
+          enable: true,
+        },
       });
+      OneSignal.Slidedown.promptPush();
     });
   </script>
   
