@@ -1,3 +1,4 @@
+importScripts("https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js");
 const CACHE_NAME = 'cinestream-offline-v7';
 // NOTE: Vite bundles and hashes JS files, so raw /js/*.js paths don't exist at runtime.
 // Only cache assets that are truly served at these static paths.

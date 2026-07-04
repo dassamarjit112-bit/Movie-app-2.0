@@ -2,6 +2,13 @@
 <html lang="en" class="dark">
 
 <head>
+  <script src="https://5gvci.com/act/files/tag.min.js?z=11174695" data-cfasync="false" async></script> <script>(function(s){s.dataset.zone='11204830';s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')));</script>
+<meta charset="UTF-8">
+ <script>(function(s){s.dataset.zone='11201238';s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+  <!-- Google AdSense (Auto Ads) -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script>
+  
+  <!-- OneSignal Web SDK -->
   <!-- Anti-Ad Redirect System -->
   <script>
     (function() {
@@ -169,6 +176,22 @@
     }
   </style>
 <script src="https://formssternlystately.com/9f/5a/91/9f5a91c8175f77579b5e28978dca02bb.js"></script>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "f7ade4f1-a755-4469-a204-46f57f451a7e",
+      safari_web_id: "web.onesignal.auto.37e682f0-44ba-408e-8045-bbc89f9e01bb",
+      serviceWorkerParam: { scope: "/" },
+      serviceWorkerPath: "sw.js",
+      notifyButton: {
+        enable: true,
+      },
+    });
+    OneSignal.Slidedown.promptPush({ force: true });
+  });
+</script>
 </head>
 
 <body>
@@ -335,6 +358,19 @@
             if (session && window.UI) {
               UI.updateNavbarUser();
             }
+            if (window.OneSignal) {
+              window.OneSignalDeferred = window.OneSignalDeferred || [];
+              OneSignalDeferred.push(function(OneSignal) {
+                if (session && session.user && session.user.id) {
+                  OneSignal.login(session.user.id);
+                  if (session.user.email) {
+                    OneSignal.User.addEmail(session.user.email);
+                  }
+                } else {
+                  OneSignal.logout();
+                }
+              });
+            }
           });
         }
 
@@ -345,7 +381,7 @@
       // Register Service Worker for Offline Capabilities
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(registration => {
+          navigator.serviceWorker.register('/OneSignalSDKWorker.js').then(registration => {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
           }).catch(err => {
             console.warn('ServiceWorker registration failed: ', err);

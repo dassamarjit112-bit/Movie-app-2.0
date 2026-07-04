@@ -47,12 +47,12 @@ export default defineConfig({
         // Copy public/ folder (APK files, static assets) to dist/ root
         copyFolderRecursiveSync(path.resolve(__dirname, 'public'), path.resolve(__dirname, 'dist'));
 
-        // ── Copy sw.js to dist root (must be served from root scope) ──
-        const swSrc = path.resolve(__dirname, 'sw.js');
-        const swDst = path.resolve(__dirname, 'dist/sw.js');
+        // ── Copy OneSignalSDKWorker.js to dist root (must be served from root scope) ──
+        const swSrc = path.resolve(__dirname, 'OneSignalSDKWorker.js');
+        const swDst = path.resolve(__dirname, 'dist/OneSignalSDKWorker.js');
         if (fs.existsSync(swSrc)) {
           fs.copyFileSync(swSrc, swDst);
-          console.log('[CineStream Build] Copied: sw.js -> dist/sw.js');
+          console.log('[CineStream Build] Copied: OneSignalSDKWorker.js -> dist/OneSignalSDKWorker.js');
         }
       }
     }
