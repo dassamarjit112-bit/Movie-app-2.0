@@ -339,6 +339,19 @@
             if (session && window.UI) {
               UI.updateNavbarUser();
             }
+            if (window.OneSignal) {
+              window.OneSignalDeferred = window.OneSignalDeferred || [];
+              OneSignalDeferred.push(function(OneSignal) {
+                if (session && session.user && session.user.id) {
+                  OneSignal.login(session.user.id);
+                  if (session.user.email) {
+                    OneSignal.User.addEmail(session.user.email);
+                  }
+                } else {
+                  OneSignal.logout();
+                }
+              });
+            }
           });
         }
 
