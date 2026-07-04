@@ -75,6 +75,21 @@ const NotificationSystem = (() => {
 
     if (!('Notification' in window)) return;
     _notifPermission = Notification.permission;
+    
+    // Configure OneSignal tags for server-side pushing
+    if (window.OneSignal) {
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(function(OneSignal) {
+        if (_notifPermission === 'granted') {
+           OneSignal.User.addTags({
+             movies: "true",
+             sports: "true",
+             app_active: "true"
+           });
+        }
+      });
+    }
+
     if (_notifPermission === 'default' || _notifPermission === 'denied') {
       // Wait for page to render before showing the banner
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -215,9 +230,30 @@ const NotificationSystem = (() => {
     }
 
     if (!('Notification' in window)) return false;
-    const result = await Notification.requestPermission();
+    
+    let result = Notification.permission;
+
+    if (window.OneSignal) {
+      // Use OneSignal's native permission requester
+      await window.OneSignal.Slidedown.promptPush();
+      result = Notification.permission;
+    } else {
+      result = await Notification.requestPermission();
+    }
+
     _notifPermission = result;
     if (result === 'granted') {
+      if (window.OneSignal) {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(function(OneSignal) {
+           OneSignal.User.addTags({
+             movies: "true",
+             sports: "true",
+             app_active: "true"
+           });
+        });
+      }
+      
       _showAndroidNotification({
         title: '🎬 CineStream Notifications ON',
         body: "You'll now get live FIFA scores, new releases & more!",
