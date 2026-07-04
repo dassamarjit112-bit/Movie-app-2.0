@@ -39,7 +39,7 @@ const NotificationSystem = (() => {
   async function _registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
     try {
-      _swRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      _swRegistration = await navigator.serviceWorker.register('/OneSignalSDKWorker.js', { scope: '/' });
       console.log('[Notif] SW registered');
 
       // Listen for messages from SW

@@ -9,20 +9,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script>
   
   <!-- OneSignal Web SDK -->
-  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-  <script>
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "f7ade4f1-a755-4469-a204-46f57f451a7e",
-        safari_web_id: "web.onesignal.auto.37e682f0-44ba-408e-8045-bbc89f9e01bb",
-        notifyButton: {
-          enable: true,
-        },
-      });
-      OneSignal.Slidedown.promptPush();
-    });
-  </script>
+ 
   
   <!-- Anti-Ad Redirect System -->
   <script>
@@ -190,6 +177,21 @@
       color: #14d1ff;
     }
   </style>
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "f7ade4f1-a755-4469-a204-46f57f451a7e",
+      safari_web_id: "web.onesignal.auto.37e682f0-44ba-408e-8045-bbc89f9e01bb",
+      serviceWorkerParam: { scope: "/" },
+      serviceWorkerPath: "sw.js",
+      notifyButton: {
+        enable: true,
+      },
+    });
+  });
+</script>
 </head>
 
 <body>
@@ -367,7 +369,7 @@
       // Register Service Worker for Offline Capabilities
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(registration => {
+          navigator.serviceWorker.register('/OneSignalSDKWorker.js').then(registration => {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
           }).catch(err => {
             console.warn('ServiceWorker registration failed: ', err);
