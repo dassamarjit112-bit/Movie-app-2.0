@@ -271,6 +271,58 @@ const NotificationSystem = (() => {
     }
     return result === 'granted';
   }
+  // ── Broadcast via OneSignal REST API (Backend Proxy) ──
+  async function _broadcastGlobalNotification({ title, body, image, url, tag }) {
+    // Prevent duplicate sending by same client within a short timeframe
+    const lockKey = 'cs_sent_' + (tag || title.substring(0, 20));
+    if (localStorage.getItem(lockKey)) return;
+    localStorage.setItem(lockKey, Date.now().toString());
+
+    const payload = { title, body, image };
+    if (url) {
+        payload.url = window.location.origin + '/' + url.replace('#', '');
+    }
+
+    try {
+      const response = await fetch("/api/onesignal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      console.log("[Notif] Broadcast global push:", title, response.status);
+    } catch(e) {
+      console.warn("[Notif] Error broadcasting", e);
+    }
+  }
+
+  // ── Broadcast via OneSignal REST API (Backend Proxy) ──
+  async function _broadcastGlobalNotification({ title, body, image, url, tag }) {
+    // Prevent duplicate sending by same client within a short timeframe
+    const lockKey = 'cs_sent_' + (tag || title.substring(0, 20));
+    if (localStorage.getItem(lockKey)) return;
+    localStorage.setItem(lockKey, Date.now().toString());
+
+    const payload = { title, body, image };
+    if (url) {
+        payload.url = window.location.origin + '/' + url.replace('#', '');
+    }
+
+    try {
+      const response = await fetch("/api/onesignal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      console.log("[Notif] Broadcast global push:", title, response.status);
+    } catch(e) {
+      console.warn("[Notif] Error broadcasting", e);
+    }
+  }
+
 
   // ── Android-style Web Push Notification ──
   function _showAndroidNotification({ title, body, type, image, url, tag }) {
@@ -436,7 +488,7 @@ const NotificationSystem = (() => {
       const notifTitle = `🎬 New ${type}: ${title}`;
       const notifBody = `⭐ ${rating} • Now streaming on SD CineStream • Tap to watch`;
 
-      _showAndroidNotification({ title: notifTitle, body: notifBody, type: 'movie', image: poster, url: '#home', tag: `release-${pick.id || Date.now()}` });
+      _broadcastGlobalNotification({ title: notifTitle, body: notifBody, image: poster, url: '#home', tag: `release-${pick.id || Date.now()}` });
       _addToPanel({
         id: `tmdb-${pick.id || Date.now()}`,
         title: notifTitle,
@@ -475,7 +527,7 @@ const NotificationSystem = (() => {
             const icon = match.tournamentIcon || '⚽';
             const title = `${icon} ${match.tournament} — Starting Now!`;
             const body = `${match.homeTeam} vs ${match.awayTeam} • ${match.matchTime} — Tap to watch live`;
-            _showAndroidNotification({ title, body, type: 'score', tag: `start-${id}`, url: '#sports' });
+            _broadcastGlobalNotification({ title, body, url: '#sports', tag: `start-${id}` });
             _addToPanel({ id: `start-${id}`, title, body, type: 'score', time: now, read: false, icon, meta: match });
           }
         }
@@ -489,14 +541,14 @@ const NotificationSystem = (() => {
             const icon = match.tournamentIcon || '⚽';
             const title = `${icon} LIVE: ${match.homeTeam} vs ${match.awayTeam}`;
             const body = `Score: ${match.score} • ${match.status} • ${match.tournament}`;
-            _showAndroidNotification({ title, body, type: 'score', tag: `live-${id}`, url: '#sports' });
+            _broadcastGlobalNotification({ title, body, url: '#sports', tag: `live-${id}` });
             _addToPanel({ id: `live-${id}-${now}`, title, body, type: 'score', time: now, read: false, icon, meta: match });
           } else if (prev.scoreKey !== scoreKey) {
             // Score changed — GOAL!
             const icon = match.tournamentIcon || '⚽';
             const title = `${icon} GOAL! ${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam}`;
             const body = `${match.status} • ${match.tournament} — Tap to watch the replay`;
-            _showAndroidNotification({ title, body, type: 'score', tag: `goal-${id}`, url: '#sports' });
+            _broadcastGlobalNotification({ title, body, url: '#sports', tag: `goal-${id}` });
             _addToPanel({ id: `goal-${id}-${now}`, title, body, type: 'score', time: now, read: false, icon, meta: match, isGoal: true });
           }
 
@@ -508,7 +560,7 @@ const NotificationSystem = (() => {
           const icon = match.tournamentIcon || '⚽';
           const title = `${icon} Full Time: ${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam}`;
           const body = `${match.tournament} — Match has ended`;
-          _showAndroidNotification({ title, body, type: 'score', tag: `ft-${id}`, url: '#sports' });
+          _broadcastGlobalNotification({ title, body, url: '#sports', tag: `ft-${id}` });
           _addToPanel({ id: `ft-${id}`, title, body, type: 'score', time: now, read: false, icon, meta: match });
           _liveMatchCache[id] = { ...(_liveMatchCache[id] || {}), finished: true };
         }
@@ -563,11 +615,11 @@ const NotificationSystem = (() => {
     const descText = release.description || release.desc || 'Now Streaming on CineStream';
     const body = `${descText.substring(0, 60)}${descText.length > 60 ? '...' : ''} • ⭐ ${rating} • ${release.genre || 'Drama'}`;
 
-    _showAndroidNotification({
-      title, body, type: 'movie',
+    _broadcastGlobalNotification({
+      title, body,
       image: release.poster,
       url: `/#home`,
-      tag: `release-${release.id || Date.now()}`,
+      tag: `release-${release.id || Date.now()}`
     });
 
     _addToPanel({
