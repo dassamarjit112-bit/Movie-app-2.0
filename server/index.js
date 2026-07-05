@@ -646,6 +646,42 @@ app.get('/api/jobs/file/:jobId', (req, res) => {
   res.download(job.filePath, job.filename);
 });
 
+// ── OneSignal Push Notification Proxy ──
+app.post('/api/onesignal', async (req, res) => {
+  const { title, body, image, url } = req.body;
+  if (!title || !body) return res.status(400).json({ error: 'Missing title or body' });
+
+  const APP_ID = "f7ade4f1-a755-4469-a204-46f57f451a7e";
+  const REST_API_KEY = process.env.ONESIGNAL_REST_API_KEY;
+
+  if (!REST_API_KEY) {
+    return res.status(500).json({ error: 'Server misconfiguration: missing API key' });
+  }
+
+  const payload = {
+    app_id: APP_ID,
+    included_segments: ["Subscribed Users"],
+    headings: { "en": title },
+    contents: { "en": body }
+  };
+  
+  if (image) payload.big_picture = image;
+  if (url) payload.url = url;
+
+  try {
+    const response = await axios.post("https://onesignal.com/api/v1/notifications", payload, {
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Basic ${REST_API_KEY}`
+      }
+    });
+    return res.status(response.status).json(response.data);
+  } catch(e) {
+    console.error("[OneSignal API] Error:", e.message);
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`CinePro backend listening on http://localhost:${PORT}`);
