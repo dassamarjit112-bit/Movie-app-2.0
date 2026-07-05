@@ -297,31 +297,6 @@ const NotificationSystem = (() => {
     }
   }
 
-  // ── Broadcast via OneSignal REST API (Backend Proxy) ──
-  async function _broadcastGlobalNotification({ title, body, image, url, tag }) {
-    // Prevent duplicate sending by same client within a short timeframe
-    const lockKey = 'cs_sent_' + (tag || title.substring(0, 20));
-    if (localStorage.getItem(lockKey)) return;
-    localStorage.setItem(lockKey, Date.now().toString());
-
-    const payload = { title, body, image };
-    if (url) {
-        payload.url = window.location.origin + '/' + url.replace('#', '');
-    }
-
-    try {
-      const response = await fetch("/api/onesignal", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
-      console.log("[Notif] Broadcast global push:", title, response.status);
-    } catch(e) {
-      console.warn("[Notif] Error broadcasting", e);
-    }
-  }
 
 
   // ── Android-style Web Push Notification ──
