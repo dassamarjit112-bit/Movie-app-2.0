@@ -389,6 +389,7 @@ const PlayerPage = (() => {
       'Videoasy',
       '2Embed',
       'VidLink',
+      'Own Server',
       'AutoEmbed',
       'StreamIMDb'
     ];
@@ -582,6 +583,7 @@ const PlayerPage = (() => {
       'Videoasy',
       '2Embed',
       'VidLink',
+      'Own Server',
       'AutoEmbed',
       'StreamIMDb'
     ];
