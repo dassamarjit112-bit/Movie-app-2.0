@@ -105,21 +105,21 @@
     <p style="color:rgba(229,226,225,0.55); font-size:13px; line-height:1.5;">Manage your profile, subscription, watchlist, and preferences.</p>
     
     <!-- Mobile Tab Navigation (shown on small screens) -->
-    <div class="mobile-tabs" style="display:none; position:sticky; top:60px; z-index:50; background:rgba(10,10,10,0.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:14px; padding:6px; margin-bottom:20px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+    <div class="mobile-tabs" style="display:none; position:sticky; top:60px; z-index:50; background:rgba(10,10,10,0.95); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-radius:12px; margin-bottom:16px; padding:8px;">
       <div style="display:flex; gap:4px;">
-        <button class="mobile-tab-btn active" data-tab="profile" style="flex:1; padding:10px 8px; border:none; background:rgba(255,255,255,0.04); color:rgba(229,226,225,0.6); border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:56px;">
+        <button class="mobile-tab-btn active" data-tab="profile" style="flex:1; padding:10px 8px; border:none; background:rgba(255,255,255,0.04); color:rgba(229,226,225,0.6); border-radius:10px; font-size:10px; font-weight:600; cursor:pointer; transition:all 0.3s;">
           <span class="material-symbols-outlined" style="font-size:20px;">person</span>
           <span style="font-size:10px; letter-spacing:0.02em;">Profile</span>
         </button>
-        <button class="mobile-tab-btn" data-tab="subscription" style="flex:1; padding:10px 8px; border:none; background:rgba(255,255,255,0.04); color:rgba(229,226,225,0.6); border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:56px;">
+        <button class="mobile-tab-btn" data-tab="subscription" style="flex:1; padding:10px 8px; border:none; background:rgba(255,255,255,0.04); color:rgba(229,226,225,0.6); border-radius:10px; font-size:10px; font-weight:600; cursor:pointer; transition:all 0.3s;">
           <span class="material-symbols-outlined" style="font-size:20px;">payments</span>
           <span style="font-size:10px; letter-spacing:0.02em;">Billing</span>
         </button>
-        <button class="mobile-tab-btn" data-tab="watchlist" style="flex:1; padding:10px 8px; border:none; background:rgba(255,255,255,0.04); color:rgba(229,226,225,0.6); border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:56px;">
+        <button class="mobile-tab-btn" data-tab="watchlist" style="flex:1; padding:10px 8px; border:none; background:rgba(255,255,255,0.04); color:rgba(229,226,225,0.6); border-radius:10px; font-size:10px; font-weight:600; cursor:pointer; transition:all 0.3s;">
           <span class="material-symbols-outlined" style="font-size:20px;">bookmark</span>
           <span style="font-size:10px; letter-spacing:0.02em;">Watchlist</span>
         </button>
-        <button class="mobile-tab-btn" data-tab="history" style="flex:1; padding:10px 8px; border:none; background:rgba(255,255,255,0.04); color:rgba(229,226,225,0.6); border-radius:10px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; flex-direction:column; align-items:center; gap:4px; min-height:56px;">
+        <button class="mobile-tab-btn" data-tab="history" style="flex:1; padding:10px 8px; border:none; background:rgba(255,255,255,0.04); color:rgba(229,226,225,0.6); border-radius:10px; font-size:10px; font-weight:600; cursor:pointer; transition:all 0.3s;">
           <span class="material-symbols-outlined" style="font-size:20px;">history</span>
           <span style="font-size:10px; letter-spacing:0.02em;">History</span>
         </button>
@@ -130,25 +130,30 @@
       
       <!-- Desktop Sidebar Navigation -->
       <aside style="display:none; flex-direction:column; gap:6px;" class="account-sidebar">
-        <button class="account-nav-btn active" data-tab="profile" style="display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:600; text-align:left; transition:all 0.2s; font-size:14px;">
+        <button class="account-nav-btn active" data-tab="profile" style="display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:600; text-align:left; color:rgba(229,226,225,0.6); background:none; border:none; cursor:pointer; transition:all 0.3s;">
           <span class="material-symbols-outlined" style="font-size:22px;">person</span>
           <span>Profile</span>
         </button>
-        <button class="account-nav-btn" data-tab="subscription" style="display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:600; text-align:left; transition:all 0.2s; font-size:14px;">
+        <button class="account-nav-btn" data-tab="subscription" style="display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:600; text-align:left; color:rgba(229,226,225,0.6); background:none; border:none; cursor:pointer; transition:all 0.3s;">
           <span class="material-symbols-outlined" style="font-size:22px;">payments</span>
           <span>Membership & Billing</span>
         </button>
-        <button class="account-nav-btn" data-tab="watchlist" style="display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:600; text-align:left; transition:all 0.2s; font-size:14px;">
+        <button class="account-nav-btn" data-tab="watchlist" style="display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:600; text-align:left; color:rgba(229,226,225,0.6); background:none; border:none; cursor:pointer; transition:all 0.3s;">
           <span class="material-symbols-outlined" style="font-size:22px;">bookmark</span>
           <span>My Watchlist</span>
         </button>
-        <button class="account-nav-btn" data-tab="history" style="display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:600; text-align:left; transition:all 0.2s; font-size:14px;">
+        <button class="account-nav-btn" data-tab="history" style="display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:600; text-align:left; color:rgba(229,226,225,0.6); background:none; border:none; cursor:pointer; transition:all 0.3s;">
           <span class="material-symbols-outlined" style="font-size:22px;">history</span>
           <span>Viewing History</span>
         </button>
+        <!-- Admin Panel Button (hidden by default, shown only for admin users) -->
+        <button id="admin-panel-btn" style="display:none; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:700; text-align:left; color:#14d1ff; background:none; border:1px solid rgba(20,209,255,0.2); cursor:pointer; transition:all 0.3s; margin-top:8px;">
+          <span class="material-symbols-outlined" style="font-size:22px;">admin_panel_settings</span>
+          <span>Admin Panel</span>
+        </button>
         <div style="height:1px; background:rgba(255,255,255,0.06); margin:8px 0;"></div>
         <button id="account-signout-btn" style="
-          display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:700; text-align:left; color:#ff6b6b; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size:14px;
+          display:flex; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:700; text-align:left; color:#ff6b6b; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           background: rgba(255,255,255,0.02);
           border: 1px solid rgba(255,107,107,0.15);
           position: relative;
@@ -272,7 +277,7 @@
           <h2 class="text-headline-sm" style="margin-bottom:20px; font-size:18px;">Membership Details</h2>
           
           <!-- Sub active card -->
-          <div id="sub-active-display" class="glass-card" style="padding:20px; border-radius:14px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); margin-bottom:20px; display:none;">
+          <div id="sub-active-display" class="glass-card" style="padding:20px; border-radius:14px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); margin-bottom:20px;">
             <div style="display:flex; flex-direction:column; gap:12px;">
               <div>
                 <span style="font-size:10px; font-weight:700; color:rgba(255,255,255,0.4); letter-spacing:0.06em; text-transform:uppercase;">CURRENT PLAN STATUS</span>
@@ -287,7 +292,7 @@
             
             <div style="display:flex; gap:10px; margin-top:20px; flex-direction:column;">
               <button class="btn btn-ghost btn-sm" onclick="Router.navigate('subscribe')" style="border-radius:10px; width:100%; padding:12px; font-size:13px;">Change Plan</button>
-              <button class="btn btn-ghost btn-sm" id="cancel-sub-btn" style="border-radius:10px; color:#ff6b6b; border-color:rgba(255,107,107,0.3); width:100%; padding:12px; font-size:13px;">Cancel Subscription</button>
+              <button class="btn btn-ghost btn-sm" id="cancel-sub-btn" style="border-radius:10px; color:#ff6b6b; border-color:rgba(255,107,107,0.3); width:100%; padding:12px; font-size:13px;">Cancel Plan</button>
             </div>
           </div>
 
@@ -304,7 +309,7 @@
             <h4 style="font-size:13px; font-weight:700; color:#fff; margin-bottom:6px;">Redeem Promotional Voucher</h4>
             <p style="font-size:12px; color:rgba(229,226,225,0.5); margin-bottom:14px; line-height:1.4;">Vouchers instantly override current subscriptions or add active streaming cycles.</p>
             <div style="display:flex; flex-direction:column; gap:10px;">
-              <input type="text" id="quick-gift-input" class="input-field" placeholder="ENTER CODE" style="font-weight:700; text-transform:uppercase; border-radius:10px; font-size:14px; padding:12px 14px;">
+              <input type="text" id="quick-gift-input" class="input-field" placeholder="ENTER CODE" style="font-weight:700; text-transform:uppercase; border-radius:10px; font-size:14px; padding:12px 14px; border:1px solid rgba(255,255,255,0.1);">
               <button id="quick-gift-btn" class="btn btn-secondary-outline" style="border-radius:10px; width:100%; padding:12px; font-size:13px; font-weight:700;">REDEEM</button>
             </div>
           </div>
@@ -519,6 +524,23 @@
     transition: transform 0.3s ease;
   }
   #account-signout-btn:hover .material-symbols-outlined {
+    transform: rotate(-15deg) scale(1.1);
+  }
+
+  /* Admin Panel Button styling */
+  #admin-panel-btn:hover {
+    background: rgba(20,209,255,0.08) !important;
+    border-color: rgba(20,209,255,0.4) !important;
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(20,209,255,0.15);
+  }
+  #admin-panel-btn:active {
+    transform: translateX(2px) scale(0.98);
+  }
+  #admin-panel-btn .material-symbols-outlined {
+    transition: transform 0.3s ease;
+  }
+  #admin-panel-btn:hover .material-symbols-outlined {
     transform: rotate(-15deg) scale(1.1);
   }
 </style>
