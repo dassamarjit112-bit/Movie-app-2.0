@@ -9,9 +9,16 @@ create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   full_name text,
   avatar_url text,
+  is_admin boolean default false,
+  admin boolean default false,
+  role text default 'user',
   updated_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+alter table public.profiles add column if not exists is_admin boolean default false;
+alter table public.profiles add column if not exists admin boolean default false;
+alter table public.profiles add column if not exists role text default 'user';
 
 alter table public.profiles enable row level security;
 drop policy if exists "Public profiles are viewable by everyone" on public.profiles;

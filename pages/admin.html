@@ -1,0 +1,340 @@
+<!-- CineStream — Modern Admin Control Panel -->
+<div id="admin-page" style="min-height:100vh; padding-bottom:100px; position:relative; background:radial-gradient(ellipse at top, rgba(20,209,255,0.05) 0%, transparent 60%);">
+  <div id="navbar-mount"></div>
+
+  <!-- Hero Header -->
+  <div style="padding:100px var(--space-margin-desktop) 24px; background:linear-gradient(180deg, rgba(20,209,255,0.06) 0%, rgba(10,10,14,0) 100%);">
+    <div style="max-width:var(--space-container-max); margin:0 auto;">
+      
+      <div style="display:flex; justify-content:space-between; align-items:flex-center; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
+        <div>
+          <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(20,209,255,0.12); border:1px solid rgba(20,209,255,0.3); border-radius:100px; padding:4px 14px; margin-bottom:12px;">
+            <span class="material-symbols-outlined" style="font-size:16px; color:#14d1ff;">admin_panel_settings</span>
+            <span style="font-size:12px; font-weight:800; color:#14d1ff; letter-spacing:0.06em; text-transform:uppercase;">System Control Center</span>
+          </div>
+          <h1 class="text-display-sm" style="font-size:28px; font-weight:900; margin-bottom:6px;">CineStream Admin Panel</h1>
+          <p style="color:rgba(229,226,225,0.6); font-size:14px;">Manage video shows catalog, verify stream sources, control user roles, and generate subscription vouchers.</p>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+          <button id="admin-refresh-btn" class="btn btn-ghost btn-sm" style="border-radius:10px; gap:8px; border:1px solid rgba(255,255,255,0.15);">
+            <span class="material-symbols-outlined" style="font-size:18px;">refresh</span>
+            <span>Refresh Data</span>
+          </button>
+          <button onclick="Router.navigate('scraper')" class="btn btn-secondary-outline btn-sm" style="border-radius:10px; gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:18px;">travel_explore</span>
+            <span>Open Web Scraper</span>
+          </button>
+          <button onclick="Router.navigate('account')" class="btn btn-primary btn-sm" style="border-radius:10px; gap:8px;">
+            <span class="material-symbols-outlined" style="font-size:18px;">account_circle</span>
+            <span>My Account</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px;" id="admin-metrics-grid">
+        <div class="glass-card" style="padding:18px 20px; border-radius:14px; border:1px solid rgba(20,209,255,0.15); background:rgba(20,209,255,0.03);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:rgba(229,226,225,0.5); text-transform:uppercase; letter-spacing:0.05em;">Catalog Shows</span>
+            <span class="material-symbols-outlined" style="color:#14d1ff; font-size:22px;">movie</span>
+          </div>
+          <div style="font-size:26px; font-weight:800; color:#fff;" id="metric-total-shows">--</div>
+          <div style="font-size:11px; color:rgba(229,226,225,0.4); margin-top:4px;">Movies, TV Series & Anime</div>
+        </div>
+
+        <div class="glass-card" style="padding:18px 20px; border-radius:14px; border:1px solid rgba(50,220,120,0.15); background:rgba(50,220,120,0.03);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:rgba(229,226,225,0.5); text-transform:uppercase; letter-spacing:0.05em;">Registered Users</span>
+            <span class="material-symbols-outlined" style="color:#32dc78; font-size:22px;">group</span>
+          </div>
+          <div style="font-size:26px; font-weight:800; color:#fff;" id="metric-total-users">--</div>
+          <div style="font-size:11px; color:rgba(229,226,225,0.4); margin-top:4px;">From Supabase Profiles</div>
+        </div>
+
+        <div class="glass-card" style="padding:18px 20px; border-radius:14px; border:1px solid rgba(255,200,50,0.15); background:rgba(255,200,50,0.03);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:rgba(229,226,225,0.5); text-transform:uppercase; letter-spacing:0.05em;">Active Members</span>
+            <span class="material-symbols-outlined" style="color:#ffc832; font-size:22px;">verified_user</span>
+          </div>
+          <div style="font-size:26px; font-weight:800; color:#fff;" id="metric-active-subs">--</div>
+          <div style="font-size:11px; color:rgba(229,226,225,0.4); margin-top:4px;">Active Subscriptions</div>
+        </div>
+
+        <div class="glass-card" style="padding:18px 20px; border-radius:14px; border:1px solid rgba(229,9,20,0.15); background:rgba(229,9,20,0.03);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:rgba(229,226,225,0.5); text-transform:uppercase; letter-spacing:0.05em;">Stream Engines</span>
+            <span class="material-symbols-outlined" style="color:#e50914; font-size:22px;">sensors</span>
+          </div>
+          <div style="font-size:26px; font-weight:800; color:#fff;" id="metric-server-status">Operational</div>
+          <div style="font-size:11px; color:#32dc78; margin-top:4px; font-weight:600;">● VidLink, 2Embed, SuperEmbed</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Admin Main Navigation Tabs -->
+  <div style="max-width:var(--space-container-max); margin:0 auto; padding:0 var(--space-margin-desktop);">
+    <div style="display:flex; gap:10px; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:12px; margin-bottom:28px; overflow-x:auto;" id="admin-tabs">
+      <button class="admin-tab-btn active" data-tab="shows" style="display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; border:none; background:rgba(20,209,255,0.15); color:#fff; font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap;">
+        <span class="material-symbols-outlined" style="font-size:18px; color:#14d1ff;">movie</span>
+        <span>Shows & Movies Catalog</span>
+      </button>
+
+      <button class="admin-tab-btn" data-tab="users" style="display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; border:none; background:transparent; color:rgba(229,226,225,0.6); font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap;">
+        <span class="material-symbols-outlined" style="font-size:18px;">manage_accounts</span>
+        <span>Users & Roles</span>
+      </button>
+
+      <button class="admin-tab-btn" data-tab="giftcodes" style="display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; border:none; background:transparent; color:rgba(229,226,225,0.6); font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap;">
+        <span class="material-symbols-outlined" style="font-size:18px;">confirmation_number</span>
+        <span>Gift Codes & Vouchers</span>
+      </button>
+
+      <button class="admin-tab-btn" data-tab="servers" style="display:flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; border:none; background:transparent; color:rgba(229,226,225,0.6); font-size:13px; font-weight:700; cursor:pointer; transition:all 0.2s; white-space:nowrap;">
+        <span class="material-symbols-outlined" style="font-size:18px;">dns</span>
+        <span>Server Health</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: SHOWS & MOVIES CATALOG -->
+    <div id="admin-tab-shows" class="admin-tab-content">
+      <!-- Search & Filters Toolbar -->
+      <div class="glass-card" style="padding:16px 20px; border-radius:16px; margin-bottom:24px; border:1px solid rgba(255,255,255,0.06);">
+        <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+          
+          <!-- Search input -->
+          <div style="position:relative; flex:1; min-width:240px;">
+            <span class="material-symbols-outlined" style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:rgba(229,226,225,0.4); font-size:20px;">search</span>
+            <input type="text" id="admin-shows-search" class="input-field" placeholder="Search shows by title, genre, TMDB ID..." style="padding-left:44px; border-radius:10px; font-size:14px; height:44px;">
+          </div>
+
+          <!-- Type Filter -->
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="admin-shows-type" class="input-field" style="border-radius:10px; height:44px; padding:0 14px; font-size:13px; font-weight:600; min-width:130px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1);">
+              <option value="all" style="background:#1a1a2e">All Types</option>
+              <option value="movie" style="background:#1a1a2e">🎬 Movies</option>
+              <option value="tv" style="background:#1a1a2e">📺 TV Shows</option>
+              <option value="anime" style="background:#1a1a2e">⚡ Anime</option>
+            </select>
+
+            <!-- Sort Filter -->
+            <select id="admin-shows-sort" class="input-field" style="border-radius:10px; height:44px; padding:0 14px; font-size:13px; font-weight:600; min-width:140px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1);">
+              <option value="popular" style="background:#1a1a2e">🔥 Most Popular</option>
+              <option value="rating" style="background:#1a1a2e">⭐ Highest Rated</option>
+              <option value="title" style="background:#1a1a2e">🔤 Title A-Z</option>
+            </select>
+
+            <!-- Add Custom Show Button -->
+            <button id="admin-add-show-btn" class="btn btn-primary" style="border-radius:10px; height:44px; padding:0 18px; font-size:13px; white-space:nowrap; gap:6px;">
+              <span class="material-symbols-outlined" style="font-size:18px;">add_circle</span>
+              <span>Add Custom Media</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Catalog Header Count & Status -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <p style="font-size:13px; font-weight:700; color:rgba(229,226,225,0.6);" id="admin-shows-count">Showing 0 titles</p>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:11px; color:#32dc78; background:rgba(50,220,120,0.1); padding:3px 10px; border-radius:100px; font-weight:600;">● Stream Player Verification Ready</span>
+        </div>
+      </div>
+
+      <!-- Shows Grid Container -->
+      <div id="admin-shows-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:18px;">
+        <!-- Dynamically rendered show cards -->
+      </div>
+
+      <!-- Loading State -->
+      <div id="admin-shows-loading" style="text-align:center; padding:60px 0;">
+        <div style="width:40px; height:40px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 16px;"></div>
+        <p style="color:rgba(229,226,225,0.5); font-size:14px;">Loading shows catalog and stream references...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="admin-shows-empty" style="display:none; text-align:center; padding:60px 20px;">
+        <span class="material-symbols-outlined" style="font-size:64px; color:rgba(229,226,225,0.2); display:block; margin-bottom:12px;">search_off</span>
+        <h3 style="font-size:16px; font-weight:700; margin-bottom:4px;">No matching shows found</h3>
+        <p style="font-size:13px; color:rgba(229,226,225,0.5);">Try adjusting your search query or type filter.</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: USERS & ROLES -->
+    <div id="admin-tab-users" class="admin-tab-content" style="display:none;">
+      <div class="glass-card" style="padding:24px; border-radius:16px; border:1px solid rgba(255,255,255,0.06);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; margin-bottom:20px;">
+          <div>
+            <h3 style="font-size:18px; font-weight:800; margin-bottom:4px;">Registered Users & Roles</h3>
+            <p style="font-size:12px; color:rgba(229,226,225,0.5);">View registered profiles from Supabase and toggle admin privileges.</p>
+          </div>
+          <input type="text" id="admin-users-search" class="input-field" placeholder="Filter users..." style="max-width:260px; border-radius:10px; font-size:13px; padding:10px 14px;">
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:rgba(229,226,225,0.4); font-size:11px; text-transform:uppercase; letter-spacing:0.06em;">
+                <th style="padding:12px 16px;">User</th>
+                <th style="padding:12px 16px;">User ID</th>
+                <th style="padding:12px 16px;">Role</th>
+                <th style="padding:12px 16px;">Admin Status</th>
+                <th style="padding:12px 16px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-users-table-body">
+              <!-- Dynamically populated user rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: GIFT CODES & VOUCHERS -->
+    <div id="admin-tab-giftcodes" class="admin-tab-content" style="display:none;">
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:24px;" class="admin-gift-layout">
+        
+        <!-- Create Gift Code Form -->
+        <div class="glass-card" style="padding:24px; border-radius:16px; border:1px solid rgba(20,209,255,0.2);">
+          <h3 style="font-size:16px; font-weight:800; margin-bottom:6px; color:#14d1ff;">Generate Gift Code</h3>
+          <p style="font-size:12px; color:rgba(229,226,225,0.5); margin-bottom:20px;">Create promo voucher codes for instant plan redemption.</p>
+
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div>
+              <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Voucher Code</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="new-code-input" class="input-field" placeholder="e.g. CINEVIP90" style="text-transform:uppercase; font-weight:800; border-radius:10px; font-size:14px; padding:10px 14px; flex:1;">
+                <button id="gen-random-code-btn" class="btn btn-ghost btn-sm" style="border-radius:10px; padding:0 12px; font-size:11px;" title="Generate Random Code">Random</button>
+              </div>
+            </div>
+
+            <div>
+              <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Plan Type</label>
+              <select id="new-code-plan" class="input-field" style="border-radius:10px; font-size:13px; padding:10px 14px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1); width:100%;">
+                <option value="premium" style="background:#1a1a2e">Premium 4K (Ultra HD)</option>
+                <option value="standard" style="background:#1a1a2e">Standard HD</option>
+                <option value="basic" style="background:#1a1a2e">Basic SD</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Duration (Days)</label>
+              <input type="number" id="new-code-days" class="input-field" value="30" min="1" max="365" style="border-radius:10px; font-size:14px; padding:10px 14px;">
+            </div>
+
+            <div>
+              <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Max Uses</label>
+              <input type="number" id="new-code-uses" class="input-field" value="100" min="1" max="10000" style="border-radius:10px; font-size:14px; padding:10px 14px;">
+            </div>
+
+            <button id="create-code-btn" class="btn btn-primary" style="border-radius:10px; padding:12px; font-size:13px; font-weight:800; margin-top:6px;">CREATE VOUCHER</button>
+          </div>
+        </div>
+
+        <!-- Gift Codes List -->
+        <div class="glass-card" style="padding:24px; border-radius:16px; border:1px solid rgba(255,255,255,0.06);">
+          <h3 style="font-size:16px; font-weight:800; margin-bottom:16px;">Active Promo Codes</h3>
+          
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; text-align:left; font-size:13px;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(255,255,255,0.1); color:rgba(229,226,225,0.4); font-size:11px; text-transform:uppercase; letter-spacing:0.06em;">
+                  <th style="padding:10px 12px;">Code</th>
+                  <th style="padding:10px 12px;">Plan</th>
+                  <th style="padding:10px 12px;">Duration</th>
+                  <th style="padding:10px 12px;">Usage</th>
+                  <th style="padding:10px 12px;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="admin-giftcodes-table-body">
+                <!-- Dynamically loaded codes -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TAB 4: SERVER HEALTH & DIAGNOSTICS -->
+    <div id="admin-tab-servers" class="admin-tab-content" style="display:none;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+        
+        <div class="glass-card" style="padding:24px; border-radius:16px; border:1px solid rgba(50,220,120,0.2);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h4 style="font-size:15px; font-weight:800; color:#fff;">VidLink Player Engine</h4>
+            <span style="font-size:10px; font-weight:800; background:rgba(50,220,120,0.15); color:#32dc78; padding:3px 8px; border-radius:100px;">ONLINE</span>
+          </div>
+          <p style="font-size:12px; color:rgba(229,226,225,0.6); line-height:1.5; margin-bottom:16px;">Primary stream embed server supporting Movies and TV Series with multi-quality auto-play.</p>
+          <div style="font-size:11px; color:rgba(229,226,225,0.4); font-family:monospace;">Host: vidlink.pro</div>
+        </div>
+
+        <div class="glass-card" style="padding:24px; border-radius:16px; border:1px solid rgba(50,220,120,0.2);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h4 style="font-size:15px; font-weight:800; color:#fff;">2Embed Backup Engine</h4>
+            <span style="font-size:10px; font-weight:800; background:rgba(50,220,120,0.15); color:#32dc78; padding:3px 8px; border-radius:100px;">ONLINE</span>
+          </div>
+          <p style="font-size:12px; color:rgba(229,226,225,0.6); line-height:1.5; margin-bottom:16px;">High-speed fallback stream engine with subtitle support.</p>
+          <div style="font-size:11px; color:rgba(229,226,225,0.4); font-family:monospace;">Host: 2embed.cc</div>
+        </div>
+
+        <div class="glass-card" style="padding:24px; border-radius:16px; border:1px solid rgba(50,220,120,0.2);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h4 style="font-size:15px; font-weight:800; color:#fff;">SuperEmbed Server</h4>
+            <span style="font-size:10px; font-weight:800; background:rgba(50,220,120,0.15); color:#32dc78; padding:3px 8px; border-radius:100px;">ONLINE</span>
+          </div>
+          <p style="font-size:12px; color:rgba(229,226,225,0.6); line-height:1.5; margin-bottom:16px;">Global multi-mirror streaming engine for uninterrupted playback.</p>
+          <div style="font-size:11px; color:rgba(229,226,225,0.4); font-family:monospace;">Host: superembed.stream</div>
+        </div>
+
+        <div class="glass-card" style="padding:24px; border-radius:16px; border:1px solid rgba(20,209,255,0.2);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <h4 style="font-size:15px; font-weight:800; color:#fff;">Supabase Cloud DB</h4>
+            <span style="font-size:10px; font-weight:800; background:rgba(20,209,255,0.15); color:#14d1ff; padding:3px 8px; border-radius:100px;">CONNECTED</span>
+          </div>
+          <p style="font-size:12px; color:rgba(229,226,225,0.6); line-height:1.5; margin-bottom:16px;">Database storing user profiles, watch history, subscriptions, and custom show overrides.</p>
+          <div style="font-size:11px; color:rgba(229,226,225,0.4); font-family:monospace;">Host: supabase.co</div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SHOW INSPECTION & IN-ADMIN STREAM PLAYER MODAL -->
+  <div id="admin-show-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); backdrop-filter:blur(16px); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+    <div class="glass-card" style="width:100%; max-width:850px; max-height:90vh; overflow-y:auto; border-radius:20px; border:1px solid rgba(20,209,255,0.3); padding:28px; position:relative; background:#101014;">
+      
+      <button id="admin-modal-close" style="position:absolute; top:20px; right:20px; background:rgba(255,255,255,0.08); border:none; border-radius:50%; width:36px; height:36px; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+
+      <div id="admin-modal-body">
+        <!-- Content dynamically injected -->
+      </div>
+    </div>
+  </div>
+
+  <div id="footer-mount"></div>
+  <div id="mobile-nav-mount"></div>
+</div>
+
+<style>
+  .admin-tab-btn.active {
+    background: rgba(20,209,255,0.15) !important;
+    color: #fff !important;
+    border-bottom: 2px solid #14d1ff !important;
+  }
+  .admin-tab-btn:hover:not(.active) {
+    background: rgba(255,255,255,0.05) !important;
+    color: #fff !important;
+  }
+  @media (max-width: 768px) {
+    .admin-gift-layout {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>

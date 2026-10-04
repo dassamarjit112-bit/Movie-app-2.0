@@ -159,6 +159,21 @@
           <span style="flex:1;">Sign Out</span>
           <span style="font-size:10px; font-weight:600; letter-spacing:0.05em; opacity:0.6; text-transform:uppercase;">Exit</span>
         </button>
+
+        <!-- Admin Panel Sidebar Button (shown only when admin is true) -->
+        <button id="account-admin-btn" style="
+          display:none; align-items:center; gap:12px; padding:14px 18px; width:100%; border-radius:12px; font-weight:700; text-align:left; color:#14d1ff; transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size:14px;
+          background: rgba(20,209,255,0.06);
+          border: 1px solid rgba(20,209,255,0.25);
+          margin-top: 8px;
+          position: relative;
+          overflow: hidden;
+          cursor: pointer;
+        " onclick="Router.navigate('admin')">
+          <span class="material-symbols-outlined" style="font-size:22px; color:#14d1ff;">admin_panel_settings</span>
+          <span style="flex:1;">Admin Panel</span>
+          <span style="font-size:10px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; background:rgba(20,209,255,0.18); color:#14d1ff; padding:2px 6px; border-radius:4px;">Admin</span>
+        </button>
       </aside>
       <!-- Main Content Area (Mobile: full width) -->
       <main class="glass-card" style="padding:20px 16px; border-radius:16px; background:rgba(20,20,24,0.6);" id="account-content-card">
@@ -263,7 +278,48 @@
                 <!-- Arrow -->
                 <span class="material-symbols-outlined" style="font-size:18px; color:rgba(255,107,107,0.6); transition: transform 0.3s ease;">arrow_forward</span>
               </div>
-            </div>
+
+              <!-- Admin Panel Card (shown only when admin is true) -->
+              <div id="admin-card" style="
+                display: none;
+                margin-top: 16px;
+                padding: 20px;
+                border-radius: 16px;
+                background: linear-gradient(135deg, rgba(20,209,255,0.08) 0%, rgba(20,209,255,0.02) 100%);
+                border: 1px solid rgba(20,209,255,0.25);
+                align-items: center;
+                gap: 16px;
+                transition: all 0.3s ease;
+                cursor: pointer;
+                position: relative;
+                overflow: hidden;
+              " onclick="Router.navigate('admin')">
+                <!-- Icon -->
+                <div style="
+                  width: 48px;
+                  height: 48px;
+                  border-radius: 14px;
+                  background: rgba(20,209,255,0.15);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  flex-shrink: 0;
+                ">
+                  <span class="material-symbols-outlined" style="font-size:24px; color:#14d1ff;">admin_panel_settings</span>
+                </div>
+                
+                <!-- Content -->
+                <div style="flex: 1; min-width: 0;">
+                  <div style="font-size:14px; font-weight:700; color:#fff; margin-bottom:2px; display:flex; align-items:center; gap:8px;">
+                    Admin Panel
+                    <span style="font-size:10px; background:rgba(20,209,255,0.2); color:#14d1ff; padding:2px 6px; border-radius:4px; text-transform:uppercase; font-weight:800;">ADMIN</span>
+                  </div>
+                  <div style="font-size:12px; color:rgba(229,226,225,0.6); line-height:1.4;">Manage shows catalog, users, gift codes, and platform settings.</div>
+                </div>
+                
+                <!-- Arrow -->
+                <span class="material-symbols-outlined" style="font-size:18px; color:#14d1ff;">arrow_forward</span>
+              </div>
           </div>
         </div>
 

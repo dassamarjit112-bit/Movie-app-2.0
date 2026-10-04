@@ -8,9 +8,17 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   full_name TEXT,
   email TEXT,
   avatar_url TEXT,
+  is_admin BOOLEAN DEFAULT false,
+  admin BOOLEAN DEFAULT false,
+  role TEXT DEFAULT 'user',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
+
+-- Ensure admin columns exist if table was already created
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT false;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS admin BOOLEAN DEFAULT false;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';
 
 -- Enable RLS for profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;

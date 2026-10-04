@@ -15,6 +15,7 @@ const Router = (() => {
     'subscribe':     { page: 'pages/subscribe.html',       auth: true  },
     'giftcode':      { page: 'pages/giftcode.html',        auth: true  },
     'account':       { page: 'pages/account.html',         auth: true  },
+    'admin':         { page: 'pages/admin.html',           auth: true  },
     'search':        { page: 'pages/search.html',          auth: true  },
     'anime':         { page: 'pages/anime.html',           auth: true  },
     'scraper':       { page: 'pages/scraper.html',         auth: true  },
@@ -164,6 +165,7 @@ const Router = (() => {
       case 'giftcode':    window.GiftCodePage?.init(); break;
       case 'anime':       window.AnimePage?.init(); break;
       case 'account':     window.AccountPage?.init(); break;
+      case 'admin':       window.AdminPage?.init(); break;
       case 'select-country': window.SelectCountryPage?.init(); break;
       case 'scraper':     window.ScraperPage?.init(); break;
       case 'sports':      window.SportsPage?.init(); break;

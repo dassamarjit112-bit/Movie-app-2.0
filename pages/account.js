@@ -84,6 +84,23 @@ const AccountPage = (() => {
     // Profile Settings tab init
     await setupProfileTab(session);
 
+    // Check if user is Admin as per Supabase table / metadata
+    try {
+      const isAdmin = await window.Auth.isAdmin(userId);
+      const adminBtn = document.getElementById('account-admin-btn');
+      const adminCard = document.getElementById('admin-card');
+      
+      if (isAdmin) {
+        if (adminBtn) adminBtn.style.display = 'flex';
+        if (adminCard) adminCard.style.display = 'flex';
+      } else {
+        if (adminBtn) adminBtn.style.display = 'none';
+        if (adminCard) adminCard.style.display = 'none';
+      }
+    } catch (adminErr) {
+      console.warn('Admin check error in account page:', adminErr);
+    }
+
     // Sign out buttons (sidebar + logout card)
     const signoutBtn = document.getElementById('account-signout-btn');
     const logoutCard = document.getElementById('logout-card');

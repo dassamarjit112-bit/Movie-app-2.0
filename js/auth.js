@@ -189,6 +189,34 @@ const Auth = (() => {
     return session;
   }
 
+  // ── Check if user is Admin ──
+  async function isAdmin(userId) {
+    try {
+      const targetId = userId || (await getSession())?.user?.id;
+      if (!targetId) return false;
+
+      // Check profile in Supabase table
+      const profile = await getProfile(targetId);
+      if (profile) {
+        if (profile.admin === true || profile.is_admin === true || String(profile.admin).toLowerCase() === 'true' || String(profile.is_admin).toLowerCase() === 'true' || profile.role === 'admin') {
+          return true;
+        }
+      }
+
+      // Check user metadata as fallback
+      const user = await getUser().catch(() => null);
+      if (user && user.user_metadata) {
+        if (user.user_metadata.admin === true || user.user_metadata.is_admin === true || user.user_metadata.role === 'admin') {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      console.warn('Auth.isAdmin check error:', e);
+      return false;
+    }
+  }
+
   return {
     signInWithEmail,
     signUpWithEmail,
@@ -203,6 +231,7 @@ const Auth = (() => {
     getUser,
     getProfile,
     updateProfile,
+    isAdmin,
     sendPasswordReset,
     onAuthChange,
     requireAuth
