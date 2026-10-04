@@ -3,7 +3,7 @@
   <div id="navbar-mount"></div>
 
   <!-- Hero Header & Analytics Canvas (100% Full Screen Viewport Width) -->
-  <div style="padding:110px 40px 36px; background:linear-gradient(180deg, rgba(20,209,255,0.12) 0%, rgba(10,10,15,0) 100%);" class="admin-hero-wrap animate-fade-in">
+  <div style="padding:100px 32px 32px; background:linear-gradient(180deg, rgba(20,209,255,0.12) 0%, rgba(10,10,15,0) 100%);" class="admin-hero-wrap animate-fade-in">
     <div style="width:100%; max-width:100%;" class="admin-canvas-container">
       
       <!-- Top Title & Main Action Buttons Bar -->
@@ -14,7 +14,7 @@
             <span style="font-size:14px; font-weight:800; color:#14d1ff; letter-spacing:0.09em; text-transform:uppercase;">Master System Control Center</span>
           </div>
           <h1 class="text-display-sm" style="font-size:42px; font-weight:900; margin-bottom:12px; background:linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.85) 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; letter-spacing:-0.02em;">Admin Control Center</h1>
-          <p style="color:rgba(229,226,225,0.75); font-size:16px; max-width:900px; line-height:1.6;">Full-screen management dashboard for user profiles, active subscription holders, promotional voucher codes, catalog shows, and Supabase database schema inspector.</p>
+          <p style="color:rgba(229,226,225,0.75); font-size:16px; max-width:1100px; line-height:1.6;">Full-screen management dashboard for user profiles, active subscription holders, promotional voucher codes, catalog shows, and Supabase database schema inspector.</p>
         </div>
 
         <!-- Primary Canvas Header Buttons (Enlarged Touch Targets with Shimmer) -->
@@ -110,9 +110,9 @@
   </div>
 
   <!-- Admin Navigation Bar Canvas (Full Viewport Width) -->
-  <div style="width:100%; max-width:100%; padding:0 40px;" class="admin-canvas-container animate-fade-up delay-300">
+  <div style="width:100%; max-width:100%; padding:0 32px;" class="admin-canvas-container animate-fade-up delay-300">
     
-    <div style="display:flex; gap:16px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:20px; margin-bottom:40px; overflow-x:auto; scrollbar-width:none;" id="admin-tabs" class="admin-tabs-nav">
+    <div style="display:flex; gap:16px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:20px; margin-bottom:36px; overflow-x:auto; scrollbar-width:none;" id="admin-tabs" class="admin-tabs-nav">
       
       <button class="admin-tab-btn active" data-tab="users">
         <span class="material-symbols-outlined">group</span>
@@ -152,7 +152,7 @@
     <!-- TAB 1: USER ACCOUNTS & PROFILES (Full Screen Expansive Table) -->
     <div id="admin-tab-users" class="admin-tab-content admin-tab-pane-animated">
       
-      <div class="glass-card" style="padding:36px 44px; border-radius:28px; border:1px solid rgba(255,255,255,0.12); margin-bottom:40px; background:rgba(18,18,26,0.92); box-shadow:0 24px 60px rgba(0,0,0,0.65); width:100%;">
+      <div class="glass-card tab-card-box" style="padding:32px 36px; border-radius:28px; border:1px solid rgba(255,255,255,0.12); margin-bottom:40px; background:rgba(18,18,26,0.92); box-shadow:0 24px 60px rgba(0,0,0,0.65); width:100%;">
         
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:24px; margin-bottom:32px;">
           <div>
@@ -163,7 +163,7 @@
                 <span>0 Users</span>
               </span>
             </div>
-            <p style="font-size:16px; color:rgba(229,226,225,0.75); margin:0;">Full user profile directory fetched live from Supabase. Click any user ID to copy to clipboard or click Inspect to view complete details, watchlist, and history.</p>
+            <p style="font-size:16px; color:rgba(229,226,225,0.75); margin:0;">Full user profile directory fetched live from Supabase across full screen width. Click any user ID to copy or Inspect for full history.</p>
           </div>
 
           <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;" class="tab-actions-row">
@@ -180,15 +180,15 @@
         </div>
 
         <!-- Users Full-Width Table Container -->
-        <div style="overflow-x:auto; border-radius:24px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,14,0.6);" class="table-responsive-wrapper">
-          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:15px; table-layout:fixed;" class="admin-data-table">
+        <div style="overflow-x:auto; border-radius:24px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,14,0.6); width:100%;" class="table-responsive-wrapper">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:15px;" class="admin-data-table">
             <colgroup>
-              <col style="width:30%; min-width:280px;">
+              <col style="width:32%; min-width:280px;">
               <col style="width:18%; min-width:180px;">
-              <col style="width:12%; min-width:130px;">
-              <col style="width:16%; min-width:170px;">
-              <col style="width:11%; min-width:130px;">
-              <col style="width:13%; min-width:220px;">
+              <col style="width:10%; min-width:120px;">
+              <col style="width:13%; min-width:140px;">
+              <col style="width:10%; min-width:110px;">
+              <col style="width:17%; min-width:210px;">
             </colgroup>
             <thead>
               <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.15); color:rgba(229,226,225,0.65); font-size:13px; text-transform:uppercase; letter-spacing:0.1em; font-weight:800;">
@@ -212,7 +212,7 @@
     <!-- TAB 2: SUBSCRIPTION HOLDERS (`public.subscriptions`) -->
     <div id="admin-tab-subs" class="admin-tab-content admin-tab-pane-animated" style="display:none;">
       
-      <div class="glass-card" style="padding:36px 44px; border-radius:28px; border:1px solid rgba(255,200,50,0.35); margin-bottom:40px; background:rgba(18,18,26,0.92); box-shadow:0 24px 60px rgba(0,0,0,0.65); width:100%;">
+      <div class="glass-card tab-card-box" style="padding:32px 36px; border-radius:28px; border:1px solid rgba(255,200,50,0.35); margin-bottom:40px; background:rgba(18,18,26,0.92); box-shadow:0 24px 60px rgba(0,0,0,0.65); width:100%;">
         
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:24px; margin-bottom:32px;">
           <div>
@@ -223,7 +223,7 @@
                 <span>0 Active Plans</span>
               </span>
             </div>
-            <p style="font-size:16px; color:rgba(229,226,225,0.75); margin:0;">Comprehensive list of subscriber plans with remaining expiration countdowns, start dates, and grant options.</p>
+            <p style="font-size:16px; color:rgba(229,226,225,0.75); margin:0;">Full screen width directory of active subscriber plans with expiration countdowns and renewal options.</p>
           </div>
 
           <div style="position:relative; min-width:360px;" class="tab-actions-row">
@@ -233,16 +233,16 @@
         </div>
 
         <!-- Subscriptions Data Table Container -->
-        <div style="overflow-x:auto; border-radius:24px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,14,0.6);" class="table-responsive-wrapper">
-          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:15px; table-layout:fixed;" class="admin-data-table">
+        <div style="overflow-x:auto; border-radius:24px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,14,0.6); width:100%;" class="table-responsive-wrapper">
+          <table style="width:100%; border-collapse:collapse; text-align:left; font-size:15px;" class="admin-data-table">
             <colgroup>
-              <col style="width:26%; min-width:260px;">
-              <col style="width:15%; min-width:160px;">
-              <col style="width:12%; min-width:130px;">
+              <col style="width:28%; min-width:260px;">
               <col style="width:14%; min-width:140px;">
-              <col style="width:15%; min-width:160px;">
-              <col style="width:10%; min-width:120px;">
-              <col style="width:8%; min-width:140px;">
+              <col style="width:11%; min-width:120px;">
+              <col style="width:13%; min-width:130px;">
+              <col style="width:16%; min-width:160px;">
+              <col style="width:10%; min-width:110px;">
+              <col style="width:8%; min-width:130px;">
             </colgroup>
             <thead>
               <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.15); color:rgba(229,226,225,0.65); font-size:13px; text-transform:uppercase; letter-spacing:0.1em; font-weight:800;">
@@ -269,7 +269,7 @@
       <div style="display:grid; grid-template-columns:1fr 1.8fr; gap:36px;" class="admin-gift-layout">
         
         <!-- Create / Edit Gift Code Form Card -->
-        <div class="glass-card" style="padding:40px; border-radius:32px; border:1px solid rgba(20,209,255,0.4); background:rgba(18,18,26,0.92); box-shadow:0 24px 60px rgba(0,0,0,0.65);" id="gift-code-form-card">
+        <div class="glass-card gift-card-box" style="padding:36px; border-radius:32px; border:1px solid rgba(20,209,255,0.4); background:rgba(18,18,26,0.92); box-shadow:0 24px 60px rgba(0,0,0,0.65);" id="gift-code-form-card">
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
             <h3 style="font-size:24px; font-weight:900; color:#14d1ff;" id="gift-form-title">Create New Gift Voucher</h3>
@@ -283,7 +283,7 @@
           <div style="display:flex; flex-direction:column; gap:24px;">
             <div>
               <label class="input-label" style="font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:10px;">Voucher Code String</label>
-              <div style="display:flex; gap:14px;">
+              <div style="display:flex; gap:14px;" class="gift-code-input-row">
                 <input type="text" id="new-code-input" class="input-field" placeholder="e.g. CINEVIP90" style="text-transform:uppercase; font-weight:900; border-radius:16px; font-size:18px; padding:18px 20px; flex:1; letter-spacing:0.08em; color:#ffc832; height:58px;">
                 <button id="gen-random-code-btn" class="btn btn-ghost" style="border-radius:16px; padding:0 24px; font-size:15px; border:1px solid rgba(255,255,255,0.2); font-weight:800; height:58px;" title="Generate Random Code">🎲 Random</button>
               </div>
@@ -298,7 +298,7 @@
               </select>
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;" class="admin-gift-form-grid">
               <div>
                 <label class="input-label" style="font-size:13px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:10px;">Duration (Days)</label>
                 <input type="number" id="new-code-days" class="input-field" value="30" min="1" max="365" style="border-radius:16px; font-size:17px; padding:18px 20px; height:58px; font-weight:800;">
@@ -317,14 +317,14 @@
         </div>
 
         <!-- Gift Codes List Table -->
-        <div class="glass-card" style="padding:40px; border-radius:32px; border:1px solid rgba(255,255,255,0.12); background:rgba(18,18,26,0.9); box-shadow:0 24px 60px rgba(0,0,0,0.65);">
+        <div class="glass-card gift-card-box" style="padding:36px; border-radius:32px; border:1px solid rgba(255,255,255,0.12); background:rgba(18,18,26,0.9); box-shadow:0 24px 60px rgba(0,0,0,0.65);">
           
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; flex-wrap:wrap; gap:20px;">
             <h3 style="font-size:24px; font-weight:900; color:#fff;">Active Voucher Database (`public.gift_codes`)</h3>
             <input type="text" id="admin-gift-search" class="input-field" placeholder="Search code..." style="max-width:280px; border-radius:14px; font-size:15px; padding:14px 18px;">
           </div>
           
-          <div style="overflow-x:auto; border-radius:24px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,14,0.6);" class="table-responsive-wrapper">
+          <div style="overflow-x:auto; border-radius:24px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,14,0.6); width:100%;" class="table-responsive-wrapper">
             <table style="width:100%; border-collapse:collapse; text-align:left; font-size:15px;" class="admin-data-table">
               <thead>
                 <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.15); color:rgba(229,226,225,0.65); font-size:13px; text-transform:uppercase; letter-spacing:0.1em; font-weight:800;">
@@ -349,7 +349,7 @@
     <div id="admin-tab-shows" class="admin-tab-content admin-tab-pane-animated" style="display:none;">
       
       <!-- Toolbar -->
-      <div class="glass-card" style="padding:28px 32px; border-radius:28px; margin-bottom:36px; border:1px solid rgba(255,255,255,0.12);">
+      <div class="glass-card tab-card-box" style="padding:28px 32px; border-radius:28px; margin-bottom:36px; border:1px solid rgba(255,255,255,0.12);">
         <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
           
           <!-- Search Box -->
@@ -432,13 +432,13 @@
       </div>
 
       <!-- Selected Table Inspector Box -->
-      <div class="glass-card" style="padding:40px; border-radius:32px; border:1px solid rgba(175,76,255,0.4); background:rgba(18,18,26,0.92); box-shadow:0 24px 60px rgba(0,0,0,0.65);">
+      <div class="glass-card tab-card-box" style="padding:36px; border-radius:32px; border:1px solid rgba(175,76,255,0.4); background:rgba(18,18,26,0.92); box-shadow:0 24px 60px rgba(0,0,0,0.65);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:28px;">
           <h4 style="font-size:22px; font-weight:900; color:#af4cff; font-family:monospace;" id="selected-table-name">Table Data View</h4>
           <span style="font-size:14px; font-weight:800; color:rgba(229,226,225,0.75); background:rgba(175,76,255,0.22); padding:6px 18px; border-radius:100px; border:1px solid rgba(175,76,255,0.45);" id="selected-table-row-count">0 Records</span>
         </div>
 
-        <div style="overflow-x:auto; border-radius:24px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,14,0.6);" class="table-responsive-wrapper">
+        <div style="overflow-x:auto; border-radius:24px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,14,0.6); width:100%;" class="table-responsive-wrapper">
           <table style="width:100%; border-collapse:collapse; text-align:left; font-size:15px;" class="admin-data-table">
             <thead id="admin-table-inspector-head">
               <!-- Dynamically populated table headers -->
@@ -523,6 +523,24 @@
   }
   .admin-tab-pane-animated {
     animation: tab-fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  /* Full-Bleed Edge-to-Edge Canvas Utilities */
+  .admin-canvas-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  
+  .admin-tab-content {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .admin-tab-content .glass-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .admin-action-btn {
@@ -616,23 +634,39 @@
   }
 
   @media (max-width: 768px) {
+    .admin-hero-wrap {
+      padding: 90px 12px 24px !important;
+    }
+    .admin-canvas-container {
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+    }
     .admin-header-row {
       flex-direction: column !important;
       align-items: flex-start !important;
     }
     .admin-header-actions {
       width: 100% !important;
-      gap: 12px !important;
+      gap: 10px !important;
     }
     .admin-header-actions .admin-btn {
       flex: 1 1 calc(50% - 6px) !important;
       justify-content: center !important;
-      height: 50px !important;
-      padding: 0 18px !important;
-      font-size: 14px !important;
+      height: 48px !important;
+      padding: 0 14px !important;
+      font-size: 13.5px !important;
     }
     .admin-gift-layout {
       grid-template-columns: 1fr !important;
+      gap: 24px !important;
+    }
+    .gift-card-box {
+      padding: 20px 16px !important;
+      border-radius: 20px !important;
+    }
+    .tab-card-box {
+      padding: 20px 14px !important;
+      border-radius: 20px !important;
     }
     .tab-actions-row {
       width: 100% !important;
@@ -644,8 +678,25 @@
       width: 100% !important;
     }
     .admin-tab-btn {
-      padding: 14px 20px !important;
+      padding: 12px 18px !important;
       font-size: 14px !important;
+    }
+    .admin-gift-form-grid {
+      grid-template-columns: 1fr !important;
+      gap: 16px !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .gift-code-input-row {
+      flex-direction: column !important;
+      gap: 10px !important;
+    }
+    .gift-code-input-row input {
+      width: 100% !important;
+    }
+    .gift-code-input-row button {
+      width: 100% !important;
     }
   }
 </style>

@@ -246,9 +246,9 @@ const AdminPage = (() => {
                 <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; border:2.5px solid ${isAdmin ? '#14d1ff' : (hasActiveSub ? '#ffc832' : 'rgba(255,255,255,0.2)')}; flex-shrink:0; box-shadow:0 6px 16px rgba(0,0,0,0.4);">
                   <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
                 </div>
-                <div style="min-width:0;">
+                <div style="min-width:0; flex:1;">
                   <div style="font-weight:900; color:#fff; font-size:15px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span>
+                    <span style="word-break:break-word;">${name}</span>
                     ${isAdmin ? '<span style="font-size:9.5px; background:rgba(20,209,255,0.22); color:#14d1ff; padding:2px 8px; border-radius:4px; font-weight:900; border:1px solid rgba(20,209,255,0.4); flex-shrink:0;">👑 ADMIN</span>' : ''}
                     ${hasActiveSub ? `<span style="font-size:9.5px; background:rgba(255,200,50,0.22); color:#ffc832; padding:2px 8px; border-radius:4px; font-weight:900; border:1px solid rgba(255,200,50,0.4); flex-shrink:0;">VIP ${planTier}</span>` : ''}
                   </div>
