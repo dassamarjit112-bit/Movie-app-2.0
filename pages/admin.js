@@ -129,16 +129,16 @@ const AdminPage = (() => {
 
     if (titleEl) titleEl.textContent = `public.${tableName} Table Records`;
 
-    headEl.innerHTML = `<tr><th style="padding:16px; text-align:center; color:rgba(229,226,225,0.4);">Loading table data...</th></tr>`;
+    headEl.innerHTML = `<tr><th style="padding:22px; text-align:center; color:rgba(229,226,225,0.5);">Loading database records from Supabase...</th></tr>`;
     bodyEl.innerHTML = '';
 
     try {
       if (window.sb) {
-        const { data, error } = await window.sb.from(tableName).select('*').limit(50);
+        const { data, error } = await window.sb.from(tableName).select('*').limit(100);
         
         if (error || !data || data.length === 0) {
           if (countEl) countEl.textContent = '0 Records';
-          headEl.innerHTML = `<tr style="color:rgba(229,226,225,0.4);"><th style="padding:16px;">No data rows stored in ${tableName}</th></tr>`;
+          headEl.innerHTML = `<tr style="color:rgba(229,226,225,0.4);"><th style="padding:22px; text-align:center;">No data records stored in ${tableName} table</th></tr>`;
           return;
         }
 
@@ -148,20 +148,34 @@ const AdminPage = (() => {
 
         // Render table headers
         headEl.innerHTML = `
-          <tr style="background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.08); color:#af4cff; font-size:11px; text-transform:uppercase; font-family:monospace;">
-            ${columns.map(col => `<th style="padding:12px 14px;">${col}</th>`).join('')}
+          <tr style="background:rgba(255,255,255,0.06); border-bottom:1px solid rgba(255,255,255,0.15); color:#af4cff; font-size:12.5px; text-transform:uppercase; font-family:monospace; font-weight:800;">
+            ${columns.map(col => `<th style="padding:16px 20px;">${col}</th>`).join('')}
           </tr>
         `;
 
         // Render table rows
         bodyEl.innerHTML = data.map(row => `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); font-family:monospace; font-size:11.5px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06); font-family:monospace; font-size:13px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
             ${columns.map(col => {
               let val = row[col];
-              if (val === null || val === undefined) val = '<span style="opacity:0.3">null</span>';
-              else if (typeof val === 'object') val = JSON.stringify(val);
-              else if (String(val).startsWith('http')) val = `<a href="${val}" target="_blank" style="color:#14d1ff">URL</a>`;
-              return `<td style="padding:10px 14px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${val}</td>`;
+              if (val === null || val === undefined) {
+                val = '<span style="opacity:0.35; color:rgba(229,226,225,0.4); font-style:italic;">null</span>';
+              } else if (typeof val === 'boolean') {
+                val = val 
+                  ? '<span style="color:#32dc78; font-weight:900; background:rgba(50,220,120,0.18); padding:3px 10px; border-radius:6px; border:1px solid rgba(50,220,120,0.35);">TRUE</span>' 
+                  : '<span style="color:#ff6b6b; font-weight:900; background:rgba(255,107,107,0.18); padding:3px 10px; border-radius:6px; border:1px solid rgba(255,107,107,0.35);">FALSE</span>';
+              } else if (typeof val === 'object') {
+                const str = JSON.stringify(val);
+                val = `<span style="font-size:11.5px; background:rgba(175,76,255,0.15); border:1px solid rgba(175,76,255,0.3); padding:4px 8px; border-radius:6px; color:#e5b8ff;" title="${str.replace(/"/g, '&quot;')}">${str.length > 25 ? str.substring(0, 25) + '...' : str}</span>`;
+              } else if (String(val).startsWith('http')) {
+                val = `<a href="${val}" target="_blank" class="copy-pill" style="color:#14d1ff; text-decoration:none;"><span class="material-symbols-outlined" style="font-size:14px;">open_in_new</span> Link</a>`;
+              } else if (String(val).includes('T') && String(val).includes('Z') && !isNaN(Date.parse(val))) {
+                val = `<span style="color:rgba(229,226,225,0.85); font-weight:600;">${UI.formatDate(val)}</span>`;
+              } else if (col === 'id' || col === 'user_id' || String(val).length > 20) {
+                const fullStr = String(val);
+                val = `<span class="copy-pill" onclick="AdminPage.copyGiftCode('${fullStr}')" title="Click to Copy ID">${fullStr.substring(0, 14)}... <span class="material-symbols-outlined" style="font-size:13px;">content_copy</span></span>`;
+              }
+              return `<td style="padding:14px 20px; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${val}</td>`;
             }).join('')}
           </tr>
         `).join('');
@@ -191,7 +205,7 @@ const AdminPage = (() => {
       console.warn('Failed to load users from profiles table:', e);
     }
 
-    if (badgeCount) badgeCount.textContent = `${userProfiles.length} Users`;
+    if (badgeCount) badgeCount.textContent = `${userProfiles.length} Registered Users`;
     if (tabBadge) tabBadge.textContent = userProfiles.length;
 
     const renderUsers = () => {
@@ -205,7 +219,7 @@ const AdminPage = (() => {
       );
 
       if (filtered.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" style="padding:32px; text-align:center; color:rgba(229,226,225,0.4);">No user profiles found in database</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" style="padding:40px; text-align:center; color:rgba(229,226,225,0.45); font-size:15px;">No user profiles found in database</td></tr>`;
         return;
       }
 
@@ -213,68 +227,77 @@ const AdminPage = (() => {
         const isAdmin = user.is_admin === true || user.admin === true || user.role === 'admin';
         const name = user.full_name || 'CineStream Member';
         const email = user.email || (user.full_name ? user.full_name.toLowerCase().replace(/\s+/g, '') + '@cinestream.app' : 'user@cinestream.app');
-        const avatarUrl = user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
-        const joinedDate = user.created_at ? UI.formatDate(user.created_at) : 'Active User';
+        const avatarUrl = user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=e50914&textColor=ffffff`;
+        const joinedDate = user.created_at ? UI.formatDate(user.created_at) : 'Active Member';
         
-        const hasActiveSub = userSubscriptions.some(s => s.user_id === user.id && s.status === 'active' && new Date(s.end_date) > new Date());
+        const subRecord = userSubscriptions.find(s => s.user_id === user.id && s.status === 'active' && new Date(s.end_date) > new Date());
+        const hasActiveSub = !!subRecord;
+        const planTier = subRecord ? (subRecord.plan_id || 'standard').toUpperCase() : null;
+
+        const countryFlags = { india: '🇮🇳 India', usa: '🇺🇸 USA', uk: '🇬🇧 UK', canada: '🇨🇦 Canada', australia: '🇦🇺 Australia' };
+        const countryLabel = countryFlags[user.country] || (user.country ? '🌏 ' + user.country : '🌏 Global');
 
         return `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
             
             <!-- User Profile Column -->
-            <td style="padding:14px 18px;">
-              <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:38px; height:38px; border-radius:50%; overflow:hidden; border:2px solid ${isAdmin ? '#14d1ff' : (hasActiveSub ? '#ffc832' : 'rgba(255,255,255,0.1)')}; flex-shrink:0;">
+            <td style="padding:18px 24px;">
+              <div style="display:flex; align-items:center; gap:16px;">
+                <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; border:2.5px solid ${isAdmin ? '#14d1ff' : (hasActiveSub ? '#ffc832' : 'rgba(255,255,255,0.2)')}; flex-shrink:0; box-shadow:0 6px 16px rgba(0,0,0,0.4);">
                   <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
                 </div>
                 <div>
-                  <div style="font-weight:800; color:#fff; font-size:13.5px; display:flex; align-items:center; gap:6px;">
+                  <div style="font-weight:900; color:#fff; font-size:15px; display:flex; align-items:center; gap:8px;">
                     ${name}
-                    ${isAdmin ? '<span style="font-size:9px; background:rgba(20,209,255,0.2); color:#14d1ff; padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}
-                    ${hasActiveSub ? '<span style="font-size:9px; background:rgba(255,200,50,0.2); color:#ffc832; padding:1px 6px; border-radius:4px; font-weight:800;">VIP</span>' : ''}
+                    ${isAdmin ? '<span style="font-size:9.5px; background:rgba(20,209,255,0.22); color:#14d1ff; padding:2px 8px; border-radius:4px; font-weight:900; border:1px solid rgba(20,209,255,0.4);">👑 ADMIN</span>' : ''}
+                    ${hasActiveSub ? `<span style="font-size:9.5px; background:rgba(255,200,50,0.22); color:#ffc832; padding:2px 8px; border-radius:4px; font-weight:900; border:1px solid rgba(255,200,50,0.4);">VIP ${planTier}</span>` : ''}
                   </div>
-                  <div style="font-size:11.5px; color:rgba(229,226,225,0.5);">${email}</div>
+                  <div style="font-size:13px; color:rgba(229,226,225,0.6); margin-top:3px;">${email}</div>
+                  <div style="font-size:11.5px; color:rgba(229,226,225,0.4); margin-top:2px;">Joined: ${joinedDate}</div>
                 </div>
               </div>
             </td>
 
-            <!-- User ID -->
-            <td style="padding:14px 18px; font-family:monospace; font-size:11.5px; color:rgba(229,226,225,0.5);">
-              <span title="${user.id}">${(user.id || '').substring(0, 16)}...</span>
+            <!-- User ID (Copyable) -->
+            <td style="padding:18px 24px;">
+              <span class="copy-pill" onclick="AdminPage.copyGiftCode('${user.id}')" title="Click to Copy Supabase User ID">
+                <span>${(user.id || '').substring(0, 14)}...</span>
+                <span class="material-symbols-outlined" style="font-size:14px; color:#14d1ff;">content_copy</span>
+              </span>
             </td>
 
             <!-- Country -->
-            <td style="padding:14px 18px; font-size:12.5px; color:rgba(229,226,225,0.8); text-transform:capitalize;">
-              ${user.country || 'Global'}
+            <td style="padding:18px 24px; font-size:14px; color:rgba(229,226,225,0.9); font-weight:600;">
+              ${countryLabel}
             </td>
 
             <!-- Member Status -->
-            <td style="padding:14px 18px;">
-              <span style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; ${hasActiveSub ? 'background:rgba(50,220,120,0.15); color:#32dc78; border:1px solid rgba(50,220,120,0.3);' : 'background:rgba(255,255,255,0.06); color:rgba(229,226,225,0.5);'}">
-                ${hasActiveSub ? 'ACTIVE SUBSCRIBER' : 'FREE MEMBER'}
+            <td style="padding:18px 24px;">
+              <span style="font-size:12px; font-weight:800; padding:6px 14px; border-radius:100px; ${hasActiveSub ? 'background:rgba(50,220,120,0.2); color:#32dc78; border:1px solid rgba(50,220,120,0.4);' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.55); border:1px solid rgba(255,255,255,0.12);'}">
+                ${hasActiveSub ? 'ACTIVE VIP SUBSCRIBER' : 'FREE MEMBER'}
               </span>
             </td>
 
             <!-- Role Badge -->
-            <td style="padding:14px 18px;">
-              <span style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.15); color:#14d1ff; border:1px solid rgba(20,209,255,0.3);' : 'background:rgba(255,255,255,0.06); color:rgba(229,226,225,0.6);'}">
-                ${isAdmin ? 'ADMINISTRATOR' : 'USER'}
+            <td style="padding:18px 24px;">
+              <span style="font-size:12px; font-weight:800; padding:6px 14px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff; border:1px solid rgba(20,209,255,0.4);' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.65);'}">
+                ${isAdmin ? 'ADMINISTRATOR' : 'MEMBER USER'}
               </span>
             </td>
 
             <!-- Action Buttons -->
-            <td style="padding:14px 18px; text-align:right;">
-              <div style="display:flex; gap:6px; justify-content:flex-end;">
+            <td style="padding:18px 24px; text-align:right;">
+              <div style="display:flex; gap:10px; justify-content:flex-end;">
                 
-                <button onclick="AdminPage.openUserDetailsModal('${user.id}')" class="btn btn-ghost btn-sm" style="border-radius:8px; font-size:11px; padding:5px 10px; border:1px solid rgba(255,255,255,0.1);" title="Inspect User Details">
+                <button onclick="AdminPage.openUserDetailsModal('${user.id}')" class="btn btn-ghost btn-sm" style="border-radius:10px; font-size:13px; padding:8px 14px; border:1px solid rgba(255,255,255,0.18); font-weight:700;" title="Inspect Profile Details">
                   Inspect
                 </button>
 
-                <button onclick="AdminPage.toggleUserAdmin('${user.id}', ${!isAdmin})" class="btn ${isAdmin ? 'btn-ghost' : 'btn-secondary-outline'} btn-sm" style="border-radius:8px; font-size:11px; padding:5px 10px;">
+                <button onclick="AdminPage.toggleUserAdmin('${user.id}', ${!isAdmin})" class="btn ${isAdmin ? 'btn-ghost' : 'btn-secondary-outline'} btn-sm" style="border-radius:10px; font-size:13px; padding:8px 14px; font-weight:800;">
                   ${isAdmin ? 'Demote' : 'Make Admin'}
                 </button>
 
-                <button onclick="AdminPage.grantUserSubscription('${user.id}')" class="btn btn-ghost btn-sm" style="border-radius:8px; font-size:11px; color:#32dc78; padding:5px 10px; border-color:rgba(50,220,120,0.3);">
+                <button onclick="AdminPage.grantUserSubscription('${user.id}')" class="btn btn-ghost btn-sm" style="border-radius:10px; font-size:13px; color:#32dc78; padding:8px 14px; border-color:rgba(50,220,120,0.4); font-weight:800; background:rgba(50,220,120,0.08);">
                   + 30D Plan
                 </button>
 
@@ -326,52 +349,60 @@ const AdminPage = (() => {
       });
 
       if (filtered.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" style="padding:32px; text-align:center; color:rgba(229,226,225,0.4);">No subscription records found in database</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" style="padding:40px; text-align:center; color:rgba(229,226,225,0.45); font-size:15px;">No subscription records found in database</td></tr>`;
         return;
       }
 
       tableBody.innerHTML = filtered.map(sub => {
         const user = userProfiles.find(u => u.id === sub.user_id) || { full_name: 'CineStream Subscriber', email: 'user@cinestream.app' };
-        const isCurrentActive = sub.status === 'active' && new Date(sub.end_date) > new Date();
+        const endDateObj = new Date(sub.end_date);
+        const isCurrentActive = sub.status === 'active' && endDateObj > new Date();
         const planName = (sub.plan_id || 'standard').toUpperCase();
         const startDate = sub.start_date ? UI.formatDate(sub.start_date) : 'N/A';
         const endDate = sub.end_date ? UI.formatDate(sub.end_date) : 'N/A';
-        const source = sub.source || (sub.gift_code_used ? 'Gift Code (' + sub.gift_code_used + ')' : 'Payment');
+        
+        // Calculate remaining days
+        const diffMs = endDateObj - new Date();
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        const daysLabel = isCurrentActive ? `${diffDays} Days Left` : 'Expired';
+
+        const source = sub.source || (sub.gift_code_used ? '🎁 Gift Code (' + sub.gift_code_used + ')' : '💳 Payment');
 
         return `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
             
-            <td style="padding:14px 18px;">
-              <div style="font-weight:800; color:#fff; font-size:13.5px;">${user.full_name || 'Subscriber'}</div>
-              <div style="font-size:11.5px; color:rgba(229,226,225,0.5);">${user.email || sub.user_id.substring(0, 16) + '...'}</div>
+            <td style="padding:18px 24px;">
+              <div style="font-weight:900; color:#fff; font-size:15px;">${user.full_name || 'Subscriber'}</div>
+              <div style="font-size:13px; color:rgba(229,226,225,0.6); margin-top:2px;">${user.email || sub.user_id.substring(0, 16) + '...'}</div>
             </td>
 
-            <td style="padding:14px 18px;">
-              <span style="font-size:11px; font-weight:800; padding:3px 10px; border-radius:6px; background:rgba(20,209,255,0.15); color:#14d1ff; border:1px solid rgba(20,209,255,0.3);">
-                ${planName} PLAN
+            <td style="padding:18px 24px;">
+              <span style="font-size:12px; font-weight:900; padding:6px 14px; border-radius:10px; background:rgba(20,209,255,0.2); color:#14d1ff; border:1px solid rgba(20,209,255,0.4);">
+                ⭐ ${planName} PLAN
               </span>
             </td>
 
-            <td style="padding:14px 18px;">
-              <span style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; ${isCurrentActive ? 'background:rgba(50,220,120,0.15); color:#32dc78; border:1px solid rgba(50,220,120,0.3);' : 'background:rgba(255,107,107,0.15); color:#ff6b6b; border:1px solid rgba(255,107,107,0.3);'}">
-                ${isCurrentActive ? 'ACTIVE' : 'EXPIRED / CANCELLED'}
+            <td style="padding:18px 24px;">
+              <span style="font-size:12px; font-weight:800; padding:6px 14px; border-radius:100px; ${isCurrentActive ? 'background:rgba(50,220,120,0.2); color:#32dc78; border:1px solid rgba(50,220,120,0.4);' : 'background:rgba(255,107,107,0.2); color:#ff6b6b; border:1px solid rgba(255,107,107,0.4);'}">
+                ${isCurrentActive ? 'ACTIVE' : 'EXPIRED'}
               </span>
             </td>
 
-            <td style="padding:14px 18px; font-size:12px; color:rgba(229,226,225,0.6);">
+            <td style="padding:18px 24px; font-size:13.5px; color:rgba(229,226,225,0.7);">
               ${startDate}
             </td>
 
-            <td style="padding:14px 18px; font-size:12px; font-weight:600; color:${isCurrentActive ? '#fff' : 'rgba(229,226,225,0.4)'};">
-              ${endDate}
+            <td style="padding:18px 24px;">
+              <div style="font-size:14px; font-weight:800; color:${isCurrentActive ? '#fff' : 'rgba(229,226,225,0.4)'};">${endDate}</div>
+              <div style="font-size:12px; font-weight:700; color:${isCurrentActive ? '#32dc78' : '#ff6b6b'}; margin-top:2px;">${daysLabel}</div>
             </td>
 
-            <td style="padding:14px 18px; font-size:12px; color:rgba(229,226,225,0.5); text-transform:capitalize;">
+            <td style="padding:18px 24px; font-size:13.5px; color:rgba(229,226,225,0.75);">
               ${source}
             </td>
 
-            <td style="padding:14px 18px; text-align:right;">
-              <button onclick="AdminPage.grantUserSubscription('${sub.user_id}')" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:11px; padding:4px 10px;">
+            <td style="padding:18px 24px; text-align:right;">
+              <button onclick="AdminPage.grantUserSubscription('${sub.user_id}')" class="btn btn-primary btn-sm" style="border-radius:12px; font-size:13px; padding:8px 16px; font-weight:800; box-shadow:0 4px 14px rgba(229,9,20,0.3);">
                 Extend 30 Days
               </button>
             </td>
@@ -397,42 +428,42 @@ const AdminPage = (() => {
     if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
 
     modalBody.innerHTML = `
-      <div style="margin-bottom:20px;">
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-          <span class="material-symbols-outlined" style="color:#32dc78; font-size:20px;">person_add</span>
-          <span style="font-size:11px; font-weight:800; background:rgba(50,220,120,0.15); color:#32dc78; padding:2px 8px; border-radius:100px;">USER REGISTRATION</span>
+      <div style="margin-bottom:24px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <span class="material-symbols-outlined" style="color:#32dc78; font-size:22px;">person_add</span>
+          <span style="font-size:12px; font-weight:800; background:rgba(50,220,120,0.18); color:#32dc78; padding:3px 12px; border-radius:100px;">USER REGISTRATION</span>
         </div>
-        <h3 style="font-size:22px; font-weight:900; color:#fff;">Register New User Profile</h3>
+        <h3 style="font-size:24px; font-weight:900; color:#fff;">Register New User Profile</h3>
       </div>
 
-      <div style="display:flex; flex-direction:column; gap:16px;">
+      <div style="display:flex; flex-direction:column; gap:18px;">
         <div>
-          <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Full Name</label>
-          <input type="text" id="add-user-name" class="input-field" placeholder="John Doe" style="border-radius:10px; font-size:14px; padding:12px 14px;">
+          <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:8px;">Full Name</label>
+          <input type="text" id="add-user-name" class="input-field" placeholder="John Doe" style="border-radius:12px; font-size:15px; padding:14px 16px; height:50px;">
         </div>
 
         <div>
-          <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Email Address</label>
-          <input type="email" id="add-user-email" class="input-field" placeholder="user@example.com" style="border-radius:10px; font-size:14px; padding:12px 14px;">
+          <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:8px;">Email Address</label>
+          <input type="email" id="add-user-email" class="input-field" placeholder="user@example.com" style="border-radius:12px; font-size:15px; padding:14px 16px; height:50px;">
         </div>
 
         <div>
-          <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Password</label>
-          <input type="password" id="add-user-password" class="input-field" placeholder="Set initial password (min 6 chars)" style="border-radius:10px; font-size:14px; padding:12px 14px;">
+          <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:8px;">Password</label>
+          <input type="password" id="add-user-password" class="input-field" placeholder="Set initial password (min 6 chars)" style="border-radius:12px; font-size:15px; padding:14px 16px; height:50px;">
         </div>
 
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
           <div>
-            <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Role</label>
-            <select id="add-user-role" class="input-field" style="border-radius:10px; font-size:13px; padding:12px 14px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1); width:100%;">
+            <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:8px;">Role</label>
+            <select id="add-user-role" class="input-field" style="border-radius:12px; font-size:14px; padding:14px 16px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1); width:100%; height:50px; font-weight:600;">
               <option value="user" style="background:#1a1a2e">Member (Standard User)</option>
               <option value="admin" style="background:#1a1a2e">Administrator (Full Access)</option>
             </select>
           </div>
 
           <div>
-            <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Initial Plan</label>
-            <select id="add-user-plan" class="input-field" style="border-radius:10px; font-size:13px; padding:12px 14px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1); width:100%;">
+            <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:8px;">Initial Plan</label>
+            <select id="add-user-plan" class="input-field" style="border-radius:12px; font-size:14px; padding:14px 16px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1); width:100%; height:50px; font-weight:600;">
               <option value="none" style="background:#1a1a2e">None (Free Access)</option>
               <option value="premium" style="background:#1a1a2e">Premium 4K (30 Days)</option>
               <option value="standard" style="background:#1a1a2e">Standard HD (30 Days)</option>
@@ -440,7 +471,7 @@ const AdminPage = (() => {
           </div>
         </div>
 
-        <button id="submit-add-user-btn" class="btn btn-primary" style="border-radius:12px; padding:14px; font-size:14px; font-weight:800; margin-top:8px; background:linear-gradient(135deg, #32dc78 0%, #20ab55 100%); color:#000;">
+        <button id="submit-add-user-btn" class="btn btn-primary" style="border-radius:14px; padding:16px; font-size:15px; font-weight:900; margin-top:10px; background:linear-gradient(135deg, #32dc78 0%, #20ab55 100%); color:#000; box-shadow:0 8px 24px rgba(50,220,120,0.3);">
           CREATE USER PROFILE
         </button>
       </div>
@@ -525,9 +556,9 @@ const AdminPage = (() => {
     if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
 
     modalBody.innerHTML = `
-      <div style="text-align:center; padding:30px 0;">
-        <div style="width:36px; height:36px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 12px;"></div>
-        <p style="color:rgba(229,226,225,0.5); font-size:13px;">Loading user profile details...</p>
+      <div style="text-align:center; padding:40px 0;">
+        <div style="width:40px; height:40px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 14px;"></div>
+        <p style="color:rgba(229,226,225,0.6); font-size:14px;">Loading user profile details...</p>
       </div>
     `;
 
@@ -540,45 +571,45 @@ const AdminPage = (() => {
     const avatarUrl = user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'User')}`;
 
     modalBody.innerHTML = `
-      <div style="display:flex; align-items:center; gap:20px; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.08);">
-        <div style="width:64px; height:64px; border-radius:50%; overflow:hidden; border:3px solid ${isAdmin ? '#14d1ff' : 'rgba(255,255,255,0.2)'}; flex-shrink:0;">
+      <div style="display:flex; align-items:center; gap:24px; margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.1);">
+        <div style="width:72px; height:72px; border-radius:50%; overflow:hidden; border:3px solid ${isAdmin ? '#14d1ff' : 'rgba(255,255,255,0.2)'}; flex-shrink:0; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
           <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
         </div>
         <div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <h2 style="font-size:22px; font-weight:900; color:#fff;">${user?.full_name || 'CineStream Member'}</h2>
-            <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff;' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.7);'}">${isAdmin ? 'ADMINISTRATOR' : 'MEMBER'}</span>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <h2 style="font-size:24px; font-weight:900; color:#fff;">${user?.full_name || 'CineStream Member'}</h2>
+            <span style="font-size:11px; font-weight:800; padding:3px 10px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff;' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.7);'}">${isAdmin ? 'ADMINISTRATOR' : 'MEMBER'}</span>
           </div>
-          <p style="font-size:13px; color:rgba(229,226,225,0.6); margin-top:2px;">${user?.email || 'Registered User'}</p>
+          <p style="font-size:14px; color:rgba(229,226,225,0.65); margin-top:4px;">${user?.email || 'Registered User'}</p>
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:24px;">
-        <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
-          <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block; margin-bottom:4px;">Subscription Status</span>
-          <span style="font-size:14px; font-weight:800; color:${sub ? '#32dc78' : '#ff6b6b'};">${sub ? 'ACTIVE (' + sub.plan_id.toUpperCase() + ')' : 'INACTIVE'}</span>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:28px;">
+        <div style="background:rgba(255,255,255,0.03); padding:18px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+          <span style="font-size:12px; color:rgba(229,226,225,0.5); display:block; margin-bottom:6px;">Subscription Status</span>
+          <span style="font-size:15px; font-weight:900; color:${sub ? '#32dc78' : '#ff6b6b'};">${sub ? 'ACTIVE (' + sub.plan_id.toUpperCase() + ')' : 'INACTIVE'}</span>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
-          <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block; margin-bottom:4px;">Watch History Titles</span>
-          <span style="font-size:14px; font-weight:800; color:#fff;">${watchHistory.length} Shows</span>
+        <div style="background:rgba(255,255,255,0.03); padding:18px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+          <span style="font-size:12px; color:rgba(229,226,225,0.5); display:block; margin-bottom:6px;">Watch History Titles</span>
+          <span style="font-size:15px; font-weight:900; color:#fff;">${watchHistory.length} Shows</span>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
-          <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block; margin-bottom:4px;">Watchlist Bookmarks</span>
-          <span style="font-size:14px; font-weight:800; color:#fff;">${watchlist.length} Bookmarks</span>
+        <div style="background:rgba(255,255,255,0.03); padding:18px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
+          <span style="font-size:12px; color:rgba(229,226,225,0.5); display:block; margin-bottom:6px;">Watchlist Bookmarks</span>
+          <span style="font-size:15px; font-weight:900; color:#fff;">${watchlist.length} Bookmarks</span>
         </div>
       </div>
 
-      <div style="font-size:11px; color:rgba(229,226,225,0.4); font-family:monospace; background:rgba(0,0,0,0.4); padding:12px; border-radius:10px; margin-bottom:20px; word-break:break-all;">
+      <div style="font-size:12px; color:rgba(229,226,225,0.5); font-family:monospace; background:rgba(0,0,0,0.5); padding:14px; border-radius:12px; margin-bottom:24px; word-break:break-all;">
         Supabase User ID: ${userId}
       </div>
 
-      <div style="display:flex; gap:10px; justify-content:flex-end;">
-        <button onclick="AdminPage.grantUserSubscription('${userId}')" class="btn btn-secondary-outline btn-sm" style="border-radius:10px; color:#32dc78; border-color:rgba(50,220,120,0.4);">
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button onclick="AdminPage.grantUserSubscription('${userId}')" class="btn btn-secondary-outline" style="border-radius:12px; color:#32dc78; border-color:rgba(50,220,120,0.4); font-size:13.5px; font-weight:700;">
           Grant 30D Plan
         </button>
-        <button onclick="AdminPage.toggleUserAdmin('${userId}', ${!isAdmin})" class="btn btn-primary btn-sm" style="border-radius:10px;">
+        <button onclick="AdminPage.toggleUserAdmin('${userId}', ${!isAdmin})" class="btn btn-primary" style="border-radius:12px; font-size:13.5px; font-weight:800;">
           ${isAdmin ? 'Demote User' : 'Make Administrator'}
         </button>
       </div>
@@ -649,49 +680,62 @@ const AdminPage = (() => {
       const filtered = activeGiftCodes.filter(c => !searchQ || c.code.toLowerCase().includes(searchQ));
 
       if (filtered.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="5" style="padding:24px; text-align:center; color:rgba(229,226,225,0.4);">No voucher codes found</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="5" style="padding:36px; text-align:center; color:rgba(229,226,225,0.45); font-size:15px;">No voucher codes found</td></tr>`;
         return;
       }
 
-      tableBody.innerHTML = filtered.map(code => `
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
-          
-          <td style="padding:12px 14px; font-weight:800; font-family:monospace; color:#ffc832; font-size:14px;">
-            <div style="display:flex; align-items:center; gap:6px;">
-              <span>${code.code}</span>
-              <button onclick="AdminPage.copyGiftCode('${code.code}')" style="background:none; border:none; color:rgba(229,226,225,0.4); cursor:pointer; padding:2px;" title="Copy Code">
-                <span class="material-symbols-outlined" style="font-size:15px;">content_copy</span>
-              </button>
-            </div>
-          </td>
+      tableBody.innerHTML = filtered.map(code => {
+        const used = code.usage_count || 0;
+        const max = code.max_uses || 100;
+        const percent = Math.min(100, Math.round((used / max) * 100));
+        const planTier = (code.plan_id || 'premium').toUpperCase();
 
-          <td style="padding:12px 14px; font-size:12.5px; text-transform:capitalize; color:#fff;">
-            ${code.plan_id}
-          </td>
+        return `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+            
+            <td style="padding:18px 22px;">
+              <span class="copy-pill" style="border-color:rgba(255,200,50,0.4); background:rgba(255,200,50,0.1); color:#ffc832; font-weight:900; font-size:15px;" onclick="AdminPage.copyGiftCode('${code.code}')" title="Click to Copy Voucher Code">
+                <span>${code.code}</span>
+                <span class="material-symbols-outlined" style="font-size:16px;">content_copy</span>
+              </span>
+            </td>
 
-          <td style="padding:12px 14px; font-size:12.5px; color:rgba(229,226,225,0.8);">
-            ${code.duration_days} Days
-          </td>
+            <td style="padding:18px 22px;">
+              <span style="font-size:12px; font-weight:900; padding:5px 12px; border-radius:8px; background:rgba(20,209,255,0.18); color:#14d1ff; border:1px solid rgba(20,209,255,0.35);">
+                ${planTier}
+              </span>
+            </td>
 
-          <td style="padding:12px 14px; font-size:12.5px;">
-            <span style="font-weight:700; color:${(code.usage_count||0) >= (code.max_uses||100) ? '#ff6b6b' : '#32dc78'};">${code.usage_count || 0}</span> / ${code.max_uses || 100}
-          </td>
+            <td style="padding:18px 22px; font-size:14px; color:rgba(229,226,225,0.9); font-weight:700;">
+              ${code.duration_days} Days Access
+            </td>
 
-          <td style="padding:12px 14px; text-align:right;">
-            <div style="display:flex; gap:6px; justify-content:flex-end;">
-              
-              <button onclick="AdminPage.editGiftCode('${code.id}')" class="btn btn-ghost btn-sm" style="font-size:11px; padding:4px 10px; border:1px solid rgba(255,255,255,0.15); border-radius:6px;">
-                Edit
-              </button>
+            <td style="padding:18px 22px; min-width:180px;">
+              <div style="display:flex; justify-content:space-between; font-size:12.5px; font-weight:800; margin-bottom:6px;">
+                <span style="color:${used >= max ? '#ff6b6b' : '#32dc78'};">${used} / ${max} Used</span>
+                <span style="color:rgba(229,226,225,0.5);">${percent}%</span>
+              </div>
+              <div style="height:6px; background:rgba(255,255,255,0.1); border-radius:100px; overflow:hidden;">
+                <div style="height:100%; width:${percent}%; background:${used >= max ? '#ff6b6b' : 'linear-gradient(90deg, #32dc78, #14d1ff)'}; border-radius:100px;"></div>
+              </div>
+            </td>
 
-              <button onclick="AdminPage.deleteGiftCode('${code.id}')" class="btn btn-ghost btn-sm" style="color:#ff6b6b; font-size:11px; padding:4px 10px; border-radius:6px; border-color:rgba(255,107,107,0.2);">
-                Delete
-              </button>
+            <td style="padding:18px 22px; text-align:right;">
+              <div style="display:flex; gap:10px; justify-content:flex-end;">
+                
+                <button onclick="AdminPage.editGiftCode('${code.id}')" class="btn btn-ghost btn-sm" style="font-size:13px; padding:7px 14px; border:1px solid rgba(255,255,255,0.18); border-radius:10px; font-weight:800;">
+                  Edit
+                </button>
 
-            </div>
-          </td>
-        </tr>
-      `).join('');
+                <button onclick="AdminPage.deleteGiftCode('${code.id}')" class="btn btn-ghost btn-sm" style="color:#ff6b6b; font-size:13px; padding:7px 14px; border-radius:10px; border-color:rgba(255,107,107,0.35); font-weight:800; background:rgba(255,107,107,0.06);">
+                  Delete
+                </button>
+
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
     };
 
     renderCodes();
@@ -938,39 +982,39 @@ const AdminPage = (() => {
       const typeLabel = isTv ? '📺 TV Show' : (show.type === 'anime' ? '⚡ Anime' : '🎬 Movie');
       
       return `
-        <div class="glass-card" style="border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; background:rgba(20,20,24,0.6); transition:transform 0.2s, border-color 0.2s;" onmouseover="this.style.borderColor='rgba(20,209,255,0.4)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)';">
+        <div class="glass-card" style="border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; background:rgba(20,20,26,0.7); transition:transform 0.25s, border-color 0.25s;" onmouseover="this.style.borderColor='rgba(20,209,255,0.4)'; this.style.transform='translateY(-3px)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)';">
           
-          <div style="height:240px; position:relative; overflow:hidden; background:#121216;">
+          <div style="height:260px; position:relative; overflow:hidden; background:#121216;">
             <img src="${posterUrl}" alt="${show.title}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22170%22 height=%22255%22 viewBox=%220 0 170 255%22%3E%3Crect width=%22170%22 height=%22255%22 fill=%22%231a1a1a%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2236%22 fill=%22%23333%22%3E🎬%3C/text%3E%3C/svg%3E'">
             
-            <div style="position:absolute; top:8px; left:8px; display:flex; gap:4px; flex-wrap:wrap;">
-              <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; background:rgba(0,0,0,0.75); color:#14d1ff; backdrop-filter:blur(4px); border:1px solid rgba(20,209,255,0.3);">${typeLabel}</span>
-              ${show.isCustom ? `<span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; background:rgba(229,9,20,0.8); color:#fff;">CUSTOM</span>` : ''}
+            <div style="position:absolute; top:10px; left:10px; display:flex; gap:6px; flex-wrap:wrap;">
+              <span style="font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:100px; background:rgba(0,0,0,0.8); color:#14d1ff; backdrop-filter:blur(6px); border:1px solid rgba(20,209,255,0.35);">${typeLabel}</span>
+              ${show.isCustom ? `<span style="font-size:10.5px; font-weight:800; padding:3px 10px; border-radius:100px; background:rgba(229,9,20,0.85); color:#fff;">CUSTOM</span>` : ''}
             </div>
 
-            <div style="position:absolute; top:8px; right:8px;">
-              <span style="font-size:11px; font-weight:800; padding:2px 6px; border-radius:6px; background:rgba(0,0,0,0.75); color:#ffc832; backdrop-filter:blur(4px); border:1px solid rgba(255,200,50,0.3);">⭐ ${show.imdb}</span>
+            <div style="position:absolute; top:10px; right:10px;">
+              <span style="font-size:11.5px; font-weight:800; padding:3px 8px; border-radius:8px; background:rgba(0,0,0,0.8); color:#ffc832; backdrop-filter:blur(6px); border:1px solid rgba(255,200,50,0.35);">⭐ ${show.imdb}</span>
             </div>
 
-            <div style="position:absolute; bottom:0; inset-x:0; padding:8px 12px; background:linear-gradient(0deg, rgba(10,10,14,0.95) 0%, transparent 100%);">
-              <span style="font-size:10px; color:rgba(229,226,225,0.6); font-family:monospace;">ID: ${show.id}</span>
+            <div style="position:absolute; bottom:0; inset-x:0; padding:10px 14px; background:linear-gradient(0deg, rgba(10,10,14,0.95) 0%, transparent 100%);">
+              <span style="font-size:11px; color:rgba(229,226,225,0.65); font-family:monospace;">ID: ${show.id}</span>
             </div>
           </div>
 
-          <div style="padding:14px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+          <div style="padding:16px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
             <div>
-              <h4 style="font-size:14px; font-weight:800; color:#fff; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${show.title}">${show.title}</h4>
-              <p style="font-size:11px; color:rgba(229,226,225,0.5); margin-bottom:12px;">${show.year} • ${show.genre}</p>
+              <h4 style="font-size:15px; font-weight:800; color:#fff; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${show.title}">${show.title}</h4>
+              <p style="font-size:12px; color:rgba(229,226,225,0.55); margin-bottom:14px;">${show.year} • ${show.genre}</p>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-              <button onclick="AdminPage.testShowStream('${show.id}', '${show.type}')" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:12px; padding:8px; gap:6px; justify-content:center; background:linear-gradient(135deg, #e50914 0%, #ff3d4f 100%);">
-                <span class="material-symbols-outlined" style="font-size:16px;">play_circle</span>
+            <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+              <button onclick="AdminPage.testShowStream('${show.id}', '${show.type}')" class="btn btn-primary btn-sm" style="border-radius:10px; font-size:13px; padding:10px; gap:8px; justify-content:center; background:linear-gradient(135deg, #e50914 0%, #ff3d4f 100%); font-weight:800;">
+                <span class="material-symbols-outlined" style="font-size:18px;">play_circle</span>
                 <span>Play & Test Stream</span>
               </button>
 
-              <button onclick="AdminPage.inspectShowDetails('${show.id}', '${show.type}')" class="btn btn-ghost btn-sm" style="border-radius:8px; font-size:12px; padding:6px; gap:6px; justify-content:center; border:1px solid rgba(255,255,255,0.1);">
-                <span class="material-symbols-outlined" style="font-size:16px;">info</span>
+              <button onclick="AdminPage.inspectShowDetails('${show.id}', '${show.type}')" class="btn btn-ghost btn-sm" style="border-radius:10px; font-size:12.5px; padding:8px; gap:8px; justify-content:center; border:1px solid rgba(255,255,255,0.12); font-weight:600;">
+                <span class="material-symbols-outlined" style="font-size:18px;">info</span>
                 <span>Inspect Show Details</span>
               </button>
             </div>
@@ -1010,28 +1054,28 @@ const AdminPage = (() => {
       : `https://www.2embed.cc/embed/${contentId}`;
 
     modalBody.innerHTML = `
-      <div style="margin-bottom:16px;">
+      <div style="margin-bottom:20px;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-          <span style="font-size:11px; font-weight:800; background:rgba(50,220,120,0.15); color:#32dc78; padding:3px 10px; border-radius:100px;">● Stream Tester</span>
-          <span style="font-size:12px; color:rgba(229,226,225,0.5);">TMDB ID: ${contentId}</span>
+          <span style="font-size:12px; font-weight:800; background:rgba(50,220,120,0.18); color:#32dc78; padding:4px 12px; border-radius:100px;">● Stream Tester</span>
+          <span style="font-size:13px; color:rgba(229,226,225,0.6);">TMDB ID: ${contentId}</span>
         </div>
-        <h3 style="font-size:20px; font-weight:800; color:#fff;">Live Player Stream Verification</h3>
+        <h3 style="font-size:24px; font-weight:900; color:#fff;">Live Player Stream Verification</h3>
       </div>
 
-      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
-        <button class="btn btn-secondary-outline btn-sm admin-player-server active" data-src="${vidlinkUrl}" style="border-radius:8px; font-size:12px;">VidLink Server (Primary)</button>
-        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${superembedUrl}" style="border-radius:8px; font-size:12px; border:1px solid rgba(255,255,255,0.1);">SuperEmbed Server</button>
-        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${embed2Url}" style="border-radius:8px; font-size:12px; border:1px solid rgba(255,255,255,0.1);">2Embed Server</button>
-        <button onclick="Router.navigate('player', {id:'${contentId}'})" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:12px; margin-left:auto;">Full Player Page →</button>
+      <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
+        <button class="btn btn-secondary-outline btn-sm admin-player-server active" data-src="${vidlinkUrl}" style="border-radius:10px; font-size:13px; font-weight:700;">VidLink Server (Primary)</button>
+        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${superembedUrl}" style="border-radius:10px; font-size:13px; border:1px solid rgba(255,255,255,0.15); font-weight:700;">SuperEmbed Server</button>
+        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${embed2Url}" style="border-radius:10px; font-size:13px; border:1px solid rgba(255,255,255,0.15); font-weight:700;">2Embed Server</button>
+        <button onclick="Router.navigate('player', {id:'${contentId}'})" class="btn btn-primary btn-sm" style="border-radius:10px; font-size:13px; margin-left:auto; font-weight:800;">Full Player Page →</button>
       </div>
 
-      <div style="position:relative; width:100%; height:420px; border-radius:12px; overflow:hidden; background:#000; border:1px solid rgba(255,255,255,0.1);">
+      <div style="position:relative; width:100%; height:460px; border-radius:16px; overflow:hidden; background:#000; border:1px solid rgba(255,255,255,0.12);">
         <iframe id="admin-preview-iframe" src="${vidlinkUrl}" style="width:100%; height:100%; border:none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
       </div>
 
-      <div style="margin-top:14px; padding:12px; border-radius:10px; background:rgba(255,255,255,0.03); font-size:12px; color:rgba(229,226,225,0.6); display:flex; justify-content:space-between; align-items:center;">
+      <div style="margin-top:16px; padding:14px 18px; border-radius:12px; background:rgba(255,255,255,0.04); font-size:13px; color:rgba(229,226,225,0.7); display:flex; justify-content:space-between; align-items:center;">
         <span>Status: If video loads smoothly, this stream source is 100% operational for end users.</span>
-        <button onclick="document.getElementById('admin-preview-iframe').src += ''" class="btn btn-ghost btn-sm" style="font-size:11px; padding:4px 10px;">Reload Stream</button>
+        <button onclick="document.getElementById('admin-preview-iframe').src += ''" class="btn btn-ghost btn-sm" style="font-size:12px; padding:6px 14px; font-weight:700;">Reload Stream</button>
       </div>
     `;
 
@@ -1058,8 +1102,8 @@ const AdminPage = (() => {
 
     modalBody.innerHTML = `
       <div style="text-align:center; padding:40px 0;">
-        <div style="width:36px; height:36px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 12px;"></div>
-        <p style="color:rgba(229,226,225,0.5); font-size:13px;">Fetching TMDB show metadata...</p>
+        <div style="width:40px; height:40px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 14px;"></div>
+        <p style="color:rgba(229,226,225,0.6); font-size:14px;">Fetching TMDB show metadata...</p>
       </div>
     `;
 
@@ -1073,38 +1117,38 @@ const AdminPage = (() => {
     }
 
     modalBody.innerHTML = `
-      <div style="display:flex; gap:24px; flex-wrap:wrap;">
-        <div style="width:200px; flex-shrink:0;">
-          <img src="${UI.getSecurePosterUrl(details.poster)}" style="width:100%; border-radius:14px; border:1px solid rgba(255,255,255,0.1);" alt="Poster">
+      <div style="display:flex; gap:28px; flex-wrap:wrap;">
+        <div style="width:220px; flex-shrink:0;">
+          <img src="${UI.getSecurePosterUrl(details.poster)}" style="width:100%; border-radius:16px; border:1px solid rgba(255,255,255,0.15);" alt="Poster">
         </div>
         
-        <div style="flex:1; min-width:260px;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-size:11px; font-weight:800; background:rgba(20,209,255,0.15); color:#14d1ff; padding:2px 8px; border-radius:100px;">TMDB ID: ${details.id}</span>
-            <span style="font-size:12px; color:rgba(229,226,225,0.4);">${details.year || ''}</span>
+        <div style="flex:1; min-width:280px;">
+          <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <span style="font-size:12px; font-weight:800; background:rgba(20,209,255,0.18); color:#14d1ff; padding:4px 12px; border-radius:100px;">TMDB ID: ${details.id}</span>
+            <span style="font-size:13px; color:rgba(229,226,225,0.5);">${details.year || ''}</span>
           </div>
 
-          <h2 style="font-size:24px; font-weight:900; color:#fff; margin-bottom:12px;">${details.title}</h2>
-          <p style="font-size:13.5px; color:rgba(229,226,225,0.7); line-height:1.6; margin-bottom:20px;">${details.description || details.overview || 'No overview provided.'}</p>
+          <h2 style="font-size:26px; font-weight:900; color:#fff; margin-bottom:14px;">${details.title}</h2>
+          <p style="font-size:14.5px; color:rgba(229,226,225,0.75); line-height:1.7; margin-bottom:24px;">${details.description || details.overview || 'No overview provided.'}</p>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px; background:rgba(255,255,255,0.03); padding:16px; border-radius:12px;">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:28px; background:rgba(255,255,255,0.04); padding:18px; border-radius:14px;">
             <div>
-              <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block;">Genre</span>
-              <span style="font-size:13px; font-weight:600; color:#fff;">${details.genre || 'N/A'}</span>
+              <span style="font-size:12px; color:rgba(229,226,225,0.45); display:block; margin-bottom:4px;">Genre</span>
+              <span style="font-size:14px; font-weight:700; color:#fff;">${details.genre || 'N/A'}</span>
             </div>
             <div>
-              <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block;">IMDB Rating</span>
-              <span style="font-size:13px; font-weight:600; color:#ffc832;">⭐ ${details.imdb || 'N/A'}</span>
+              <span style="font-size:12px; color:rgba(229,226,225,0.45); display:block; margin-bottom:4px;">IMDB Rating</span>
+              <span style="font-size:14px; font-weight:800; color:#ffc832;">⭐ ${details.imdb || 'N/A'}</span>
             </div>
           </div>
 
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="AdminPage.testShowStream('${details.id}', '${type}')" class="btn btn-primary" style="border-radius:10px; gap:8px;">
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button onclick="AdminPage.testShowStream('${details.id}', '${type}')" class="btn btn-primary" style="border-radius:12px; gap:10px; padding:12px 22px; font-weight:800;">
               <span class="material-symbols-outlined">play_circle</span>
               <span>Test Stream Player</span>
             </button>
 
-            <button onclick="Router.navigate('detail', {id:'${details.id}', type:'${type}'}); document.getElementById('admin-show-modal').style.display='none';" class="btn btn-ghost" style="border-radius:10px; gap:6px; border:1px solid rgba(255,255,255,0.15);">
+            <button onclick="Router.navigate('detail', {id:'${details.id}', type:'${type}'}); document.getElementById('admin-show-modal').style.display='none';" class="btn btn-ghost" style="border-radius:12px; gap:8px; border:1px solid rgba(255,255,255,0.15); padding:12px 20px;">
               <span class="material-symbols-outlined">open_in_new</span>
               <span>View User Detail Page</span>
             </button>
@@ -1125,31 +1169,31 @@ const AdminPage = (() => {
     if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
 
     modalBody.innerHTML = `
-      <h3 style="font-size:20px; font-weight:800; color:#14d1ff; margin-bottom:6px;">Add Custom Show / Override</h3>
-      <p style="font-size:12px; color:rgba(229,226,225,0.5); margin-bottom:20px;">Add custom movie entries directly into Supabase database.</p>
+      <h3 style="font-size:22px; font-weight:900; color:#14d1ff; margin-bottom:8px;">Add Custom Show / Override</h3>
+      <p style="font-size:13px; color:rgba(229,226,225,0.6); margin-bottom:24px;">Add custom movie entries directly into Supabase database.</p>
 
-      <div style="display:flex; flex-direction:column; gap:14px;">
+      <div style="display:flex; flex-direction:column; gap:16px;">
         <div>
-          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Title</label>
-          <input type="text" id="custom-show-title" class="input-field" placeholder="Show Title" style="border-radius:10px; font-size:14px; padding:10px 14px;">
+          <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Title</label>
+          <input type="text" id="custom-show-title" class="input-field" placeholder="Show Title" style="border-radius:12px; font-size:15px; padding:14px 16px; height:50px;">
         </div>
 
         <div>
-          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Custom Content ID (TMDB or Unique String)</label>
-          <input type="text" id="custom-show-id" class="input-field" placeholder="e.g. 550" style="border-radius:10px; font-size:14px; padding:10px 14px;">
+          <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Custom Content ID (TMDB or Unique String)</label>
+          <input type="text" id="custom-show-id" class="input-field" placeholder="e.g. 550" style="border-radius:12px; font-size:15px; padding:14px 16px; height:50px;">
         </div>
 
         <div>
-          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Poster Image URL</label>
-          <input type="text" id="custom-show-poster" class="input-field" placeholder="https://image.tmdb.org/t/p/w500/..." style="border-radius:10px; font-size:14px; padding:10px 14px;">
+          <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Poster Image URL</label>
+          <input type="text" id="custom-show-poster" class="input-field" placeholder="https://image.tmdb.org/t/p/w500/..." style="border-radius:12px; font-size:15px; padding:14px 16px; height:50px;">
         </div>
 
         <div>
-          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Overview / Description</label>
-          <textarea id="custom-show-desc" class="input-field" rows="3" placeholder="Plot summary..." style="border-radius:10px; font-size:13px; padding:10px 14px; resize:vertical;"></textarea>
+          <label class="input-label" style="font-size:12px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Overview / Description</label>
+          <textarea id="custom-show-desc" class="input-field" rows="3" placeholder="Plot summary..." style="border-radius:12px; font-size:14px; padding:14px 16px; resize:vertical;"></textarea>
         </div>
 
-        <button id="save-custom-show-btn" class="btn btn-primary" style="border-radius:10px; padding:12px; font-size:14px; font-weight:800; margin-top:8px;">SAVE TO DATABASE</button>
+        <button id="save-custom-show-btn" class="btn btn-primary" style="border-radius:14px; padding:16px; font-size:15px; font-weight:900; margin-top:10px;">SAVE TO DATABASE</button>
       </div>
     `;
 
