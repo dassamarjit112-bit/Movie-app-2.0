@@ -241,25 +241,25 @@ const AdminPage = (() => {
           <tr style="border-bottom:1px solid rgba(255,255,255,0.06); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
             
             <!-- User Profile Column -->
-            <td style="padding:18px 24px;">
+            <td style="padding:18px 24px; vertical-align:middle;">
               <div style="display:flex; align-items:center; gap:16px;">
                 <div style="width:48px; height:48px; border-radius:50%; overflow:hidden; border:2.5px solid ${isAdmin ? '#14d1ff' : (hasActiveSub ? '#ffc832' : 'rgba(255,255,255,0.2)')}; flex-shrink:0; box-shadow:0 6px 16px rgba(0,0,0,0.4);">
                   <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
                 </div>
-                <div>
-                  <div style="font-weight:900; color:#fff; font-size:15px; display:flex; align-items:center; gap:8px;">
-                    ${name}
-                    ${isAdmin ? '<span style="font-size:9.5px; background:rgba(20,209,255,0.22); color:#14d1ff; padding:2px 8px; border-radius:4px; font-weight:900; border:1px solid rgba(20,209,255,0.4);">👑 ADMIN</span>' : ''}
-                    ${hasActiveSub ? `<span style="font-size:9.5px; background:rgba(255,200,50,0.22); color:#ffc832; padding:2px 8px; border-radius:4px; font-weight:900; border:1px solid rgba(255,200,50,0.4);">VIP ${planTier}</span>` : ''}
+                <div style="min-width:0;">
+                  <div style="font-weight:900; color:#fff; font-size:15px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                    <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span>
+                    ${isAdmin ? '<span style="font-size:9.5px; background:rgba(20,209,255,0.22); color:#14d1ff; padding:2px 8px; border-radius:4px; font-weight:900; border:1px solid rgba(20,209,255,0.4); flex-shrink:0;">👑 ADMIN</span>' : ''}
+                    ${hasActiveSub ? `<span style="font-size:9.5px; background:rgba(255,200,50,0.22); color:#ffc832; padding:2px 8px; border-radius:4px; font-weight:900; border:1px solid rgba(255,200,50,0.4); flex-shrink:0;">VIP ${planTier}</span>` : ''}
                   </div>
-                  <div style="font-size:13px; color:rgba(229,226,225,0.6); margin-top:3px;">${email}</div>
-                  <div style="font-size:11.5px; color:rgba(229,226,225,0.4); margin-top:2px;">Joined: ${joinedDate}</div>
+                  <div style="font-size:13px; color:rgba(229,226,225,0.7); margin-top:3px; word-break:break-all;">${email}</div>
+                  <div style="font-size:11.5px; color:rgba(229,226,225,0.45); margin-top:2px;">Joined: ${joinedDate}</div>
                 </div>
               </div>
             </td>
 
             <!-- User ID (Copyable) -->
-            <td style="padding:18px 24px;">
+            <td style="padding:18px 24px; vertical-align:middle;">
               <span class="copy-pill" onclick="AdminPage.copyGiftCode('${user.id}')" title="Click to Copy Supabase User ID">
                 <span>${(user.id || '').substring(0, 14)}...</span>
                 <span class="material-symbols-outlined" style="font-size:14px; color:#14d1ff;">content_copy</span>
@@ -267,26 +267,28 @@ const AdminPage = (() => {
             </td>
 
             <!-- Country -->
-            <td style="padding:18px 24px; font-size:14px; color:rgba(229,226,225,0.9); font-weight:600;">
+            <td style="padding:18px 24px; font-size:14px; color:rgba(229,226,225,0.9); font-weight:600; vertical-align:middle;">
               ${countryLabel}
             </td>
 
             <!-- Member Status -->
-            <td style="padding:18px 24px;">
-              <span style="font-size:12px; font-weight:800; padding:6px 14px; border-radius:100px; ${hasActiveSub ? 'background:rgba(50,220,120,0.2); color:#32dc78; border:1px solid rgba(50,220,120,0.4);' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.55); border:1px solid rgba(255,255,255,0.12);'}">
-                ${hasActiveSub ? 'ACTIVE VIP SUBSCRIBER' : 'FREE MEMBER'}
+            <td style="padding:18px 24px; vertical-align:middle;">
+              <span style="font-size:12px; font-weight:800; padding:6px 14px; border-radius:100px; display:inline-flex; align-items:center; gap:6px; line-height:1; ${hasActiveSub ? 'background:rgba(50,220,120,0.2); color:#32dc78; border:1px solid rgba(50,220,120,0.4);' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.55); border:1px solid rgba(255,255,255,0.12);'}">
+                <span class="material-symbols-outlined" style="font-size:15px; color:${hasActiveSub ? '#32dc78' : 'rgba(229,226,225,0.4)'};">${hasActiveSub ? 'verified' : 'person'}</span>
+                <span>${hasActiveSub ? 'ACTIVE VIP' : 'FREE MEMBER'}</span>
               </span>
             </td>
 
             <!-- Role Badge -->
-            <td style="padding:18px 24px;">
-              <span style="font-size:12px; font-weight:800; padding:6px 14px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff; border:1px solid rgba(20,209,255,0.4);' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.65);'}">
-                ${isAdmin ? 'ADMINISTRATOR' : 'MEMBER USER'}
+            <td style="padding:18px 24px; vertical-align:middle;">
+              <span style="font-size:12px; font-weight:800; padding:6px 14px; border-radius:100px; display:inline-flex; align-items:center; gap:6px; line-height:1; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff; border:1px solid rgba(20,209,255,0.4);' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.65);'}">
+                <span class="material-symbols-outlined" style="font-size:15px; color:${isAdmin ? '#14d1ff' : 'rgba(229,226,225,0.4)'};">${isAdmin ? 'admin_panel_settings' : 'account_circle'}</span>
+                <span>${isAdmin ? 'ADMIN' : 'USER'}</span>
               </span>
             </td>
 
             <!-- Action Buttons -->
-            <td style="padding:18px 24px; text-align:right;">
+            <td style="padding:18px 24px; text-align:right; vertical-align:middle;">
               <div style="display:flex; gap:10px; justify-content:flex-end;">
                 
                 <button onclick="AdminPage.openUserDetailsModal('${user.id}')" class="btn btn-ghost btn-sm" style="border-radius:10px; font-size:13px; padding:8px 14px; border:1px solid rgba(255,255,255,0.18); font-weight:700;" title="Inspect Profile Details">
