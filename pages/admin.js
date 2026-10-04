@@ -1,10 +1,11 @@
-/* CineStream — Admin Panel Controller */
+/* CineStream — Admin Control Center Controller (Next-Gen UI/UX) */
 
 const AdminPage = (() => {
   let catalogShows = [];
   let filteredShows = [];
   let userProfiles = [];
   let activeGiftCodes = [];
+  let tableRowCounts = {};
 
   async function init() {
     // Render Layout Nav
@@ -33,7 +34,7 @@ const AdminPage = (() => {
     const refreshBtn = document.getElementById('admin-refresh-btn');
     if (refreshBtn) {
       refreshBtn.onclick = () => {
-        UI.toast('Refreshing admin catalog data...', 'info');
+        UI.toast('Refreshing all database & catalog records...', 'info');
         loadAllData();
       };
     }
@@ -63,6 +64,7 @@ const AdminPage = (() => {
       loadShowsCatalog(),
       loadUsersList(),
       loadGiftCodes(),
+      loadTableCounts(),
       loadMetrics()
     ]);
   }
@@ -86,6 +88,32 @@ const AdminPage = (() => {
       }
     } catch (e) {
       console.warn('Metrics load error:', e);
+    }
+  }
+
+  // ── DATABASE TABLES & SCHEMA INSPECTOR ──
+  async function loadTableCounts() {
+    const tableNames = ['profiles', 'subscriptions', 'gift_codes', 'watch_history', 'watchlist', 'content'];
+    
+    if (!window.sb) return;
+
+    await Promise.all(tableNames.map(async (name) => {
+      try {
+        const { count } = await window.sb
+          .from(name)
+          .select('*', { count: 'exact', head: true });
+        
+        tableRowCounts[name] = count || 0;
+        const countEl = document.getElementById(`table-count-${name}`);
+        if (countEl) countEl.textContent = `${count || 0} records`;
+      } catch (e) {
+        tableRowCounts[name] = 0;
+      }
+    }));
+
+    const totalTablesEl = document.getElementById('metric-total-tables');
+    if (totalTablesEl) {
+      totalTablesEl.textContent = `${tableNames.length} Tables`;
     }
   }
 
@@ -136,7 +164,7 @@ const AdminPage = (() => {
             poster: item.poster || item.poster_url || item.thumbnail || '',
             type: item.type || (item.first_air_date ? 'tv' : 'movie'),
             year: item.year || (item.release_date || item.first_air_date || '').substring(0, 4) || '2025',
-            imdb: item.imdb || item.vote_average ? String(item.vote_average).substring(0, 3) : '8.5',
+            imdb: item.imdb || (item.vote_average ? String(item.vote_average).substring(0, 3) : '8.5'),
             genre: item.genre || 'Action / Drama',
             description: item.description || item.overview || 'No synopsis available.',
             isCustom: !!customContent.find(c => c.id == item.id)
@@ -470,10 +498,13 @@ const AdminPage = (() => {
     };
   }
 
-  // ── USER MANAGEMENT ──
+  // ── USER MANAGEMENT (List All Users in Supabase Table & Add User Functions) ──
   async function loadUsersList() {
     const tableBody = document.getElementById('admin-users-table-body');
     const searchInput = document.getElementById('admin-users-search');
+    const badgeCount = document.getElementById('admin-users-badge-count');
+    const tabBadge = document.getElementById('tab-badge-users');
+
     if (!tableBody) return;
 
     try {
@@ -484,45 +515,94 @@ const AdminPage = (() => {
         }
       }
     } catch (e) {
-      console.warn('Failed to load users:', e);
+      console.warn('Failed to load users from profiles table:', e);
     }
+
+    if (badgeCount) badgeCount.textContent = `${userProfiles.length} Users`;
+    if (tabBadge) tabBadge.textContent = userProfiles.length;
 
     const renderUsers = () => {
       const q = (searchInput?.value || '').toLowerCase().trim();
-      const filtered = userProfiles.filter(u => !q || (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q) || (u.id || '').toLowerCase().includes(q));
+      const filtered = userProfiles.filter(u => 
+        !q || 
+        (u.full_name || '').toLowerCase().includes(q) || 
+        (u.email || '').toLowerCase().includes(q) || 
+        (u.id || '').toLowerCase().includes(q) ||
+        (u.country || '').toLowerCase().includes(q)
+      );
 
       if (filtered.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="5" style="padding:24px; text-align:center; color:rgba(229,226,225,0.4);">No user profiles found</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" style="padding:32px; text-align:center; color:rgba(229,226,225,0.4);">No user profiles found in database</td></tr>`;
         return;
       }
 
       tableBody.innerHTML = filtered.map(user => {
         const isAdmin = user.is_admin === true || user.admin === true || user.role === 'admin';
+        const name = user.full_name || 'CineStream User';
+        const email = user.email || 'Registered Member';
+        const avatarUrl = user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
+        const joinedDate = user.created_at ? UI.formatDate(user.created_at) : 'Active User';
+
         return `
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-            <td style="padding:12px 16px;">
-              <div style="display:flex; align-items:center; gap:10px;">
-                <img src="${user.avatar_url || 'https://api.dicebear.com/7.x/initials/svg?seed=' + (user.full_name||'User')}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+            
+            <!-- User Profile Column -->
+            <td style="padding:14px 18px;">
+              <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:38px; height:38px; border-radius:50%; overflow:hidden; border:2px solid ${isAdmin ? '#14d1ff' : 'rgba(255,255,255,0.1)'}; flex-shrink:0;">
+                  <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
+                </div>
                 <div>
-                  <div style="font-weight:700; color:#fff;">${user.full_name || 'CineStream User'}</div>
-                  <div style="font-size:11px; color:rgba(229,226,225,0.5);">${user.email || 'Registered User'}</div>
+                  <div style="font-weight:800; color:#fff; font-size:13.5px; display:flex; align-items:center; gap:6px;">
+                    ${name}
+                    ${isAdmin ? '<span style="font-size:9px; background:rgba(20,209,255,0.2); color:#14d1ff; padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}
+                  </div>
+                  <div style="font-size:11.5px; color:rgba(229,226,225,0.5);">${email}</div>
                 </div>
               </div>
             </td>
-            <td style="padding:12px 16px; font-family:monospace; font-size:11px; color:rgba(229,226,225,0.5);">${(user.id || '').substring(0, 18)}...</td>
-            <td style="padding:12px 16px;">
-              <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.15); color:#14d1ff;' : 'background:rgba(255,255,255,0.06); color:rgba(229,226,225,0.6);'}">${isAdmin ? 'ADMINISTRATOR' : 'MEMBER'}</span>
+
+            <!-- User ID -->
+            <td style="padding:14px 18px; font-family:monospace; font-size:11.5px; color:rgba(229,226,225,0.5);">
+              <span title="${user.id}">${(user.id || '').substring(0, 16)}...</span>
             </td>
-            <td style="padding:12px 16px;">
-              <button onclick="AdminPage.toggleUserAdmin('${user.id}', ${!isAdmin})" class="btn ${isAdmin ? 'btn-ghost' : 'btn-secondary-outline'} btn-sm" style="border-radius:6px; font-size:11px; padding:4px 10px;">
-                ${isAdmin ? 'Demote User' : 'Make Admin'}
-              </button>
+
+            <!-- Country -->
+            <td style="padding:14px 18px; font-size:12.5px; color:rgba(229,226,225,0.8); text-transform:capitalize;">
+              ${user.country || 'Global'}
             </td>
-            <td style="padding:12px 16px;">
-              <button onclick="AdminPage.grantUserSubscription('${user.id}')" class="btn btn-ghost btn-sm" style="border-radius:6px; font-size:11px; color:#32dc78; padding:4px 10px; border-color:rgba(50,220,120,0.2);">
-                Grant 30D Plan
-              </button>
+
+            <!-- Role Badge -->
+            <td style="padding:14px 18px;">
+              <span style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.15); color:#14d1ff; border:1px solid rgba(20,209,255,0.3);' : 'background:rgba(255,255,255,0.06); color:rgba(229,226,225,0.6);'}">
+                ${isAdmin ? 'ADMINISTRATOR' : 'MEMBER'}
+              </span>
             </td>
+
+            <!-- Joined Date -->
+            <td style="padding:14px 18px; font-size:12px; color:rgba(229,226,225,0.45);">
+              ${joinedDate}
+            </td>
+
+            <!-- Action Buttons -->
+            <td style="padding:14px 18px; text-align:right;">
+              <div style="display:flex; gap:6px; justify-content:flex-end;">
+                
+                <button onclick="AdminPage.openUserDetailsModal('${user.id}')" class="btn btn-ghost btn-sm" style="border-radius:8px; font-size:11px; padding:5px 10px; border:1px solid rgba(255,255,255,0.1);" title="Inspect User Details">
+                  Inspect
+                </button>
+
+                <button onclick="AdminPage.toggleUserAdmin('${user.id}', ${!isAdmin})" class="btn ${isAdmin ? 'btn-ghost' : 'btn-secondary-outline'} btn-sm" style="border-radius:8px; font-size:11px; padding:5px 10px;">
+                  ${isAdmin ? 'Demote' : 'Make Admin'}
+                </button>
+
+                <button onclick="AdminPage.grantUserSubscription('${user.id}')" class="btn btn-ghost btn-sm" style="border-radius:8px; font-size:11px; color:#32dc78; padding:5px 10px; border-color:rgba(50,220,120,0.3);">
+                  + 30D Plan
+                </button>
+
+              </div>
+            </td>
+
           </tr>
         `;
       }).join('');
@@ -530,6 +610,208 @@ const AdminPage = (() => {
 
     if (searchInput) searchInput.oninput = renderUsers;
     renderUsers();
+  }
+
+  // ── ADD USER FUNCTION MODAL ──
+  function openAddUserModal() {
+    const modal = document.getElementById('admin-show-modal');
+    const modalBody = document.getElementById('admin-modal-body');
+    const closeBtn = document.getElementById('admin-modal-close');
+
+    if (!modal || !modalBody) return;
+
+    modal.style.display = 'flex';
+    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+
+    modalBody.innerHTML = `
+      <div style="margin-bottom:20px;">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+          <span class="material-symbols-outlined" style="color:#32dc78; font-size:20px;">person_add</span>
+          <span style="font-size:11px; font-weight:800; background:rgba(50,220,120,0.15); color:#32dc78; padding:2px 8px; border-radius:100px;">USER REGISTRATION</span>
+        </div>
+        <h3 style="font-size:22px; font-weight:900; color:#fff;">Register New User Profile</h3>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div>
+          <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Full Name</label>
+          <input type="text" id="add-user-name" class="input-field" placeholder="John Doe" style="border-radius:10px; font-size:14px; padding:12px 14px;">
+        </div>
+
+        <div>
+          <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Email Address</label>
+          <input type="email" id="add-user-email" class="input-field" placeholder="user@example.com" style="border-radius:10px; font-size:14px; padding:12px 14px;">
+        </div>
+
+        <div>
+          <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Password</label>
+          <input type="password" id="add-user-password" class="input-field" placeholder="Set initial password (min 6 chars)" style="border-radius:10px; font-size:14px; padding:12px 14px;">
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Role</label>
+            <select id="add-user-role" class="input-field" style="border-radius:10px; font-size:13px; padding:12px 14px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1); width:100%;">
+              <option value="user" style="background:#1a1a2e">Member (Standard User)</option>
+              <option value="admin" style="background:#1a1a2e">Administrator (Full Access)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="input-label" style="font-size:11px; font-weight:800; text-transform:uppercase; display:block; margin-bottom:6px;">Initial Plan</label>
+            <select id="add-user-plan" class="input-field" style="border-radius:10px; font-size:13px; padding:12px 14px; background:rgba(255,255,255,0.04); color:#fff; border:1px solid rgba(255,255,255,0.1); width:100%;">
+              <option value="none" style="background:#1a1a2e">None (Free Access)</option>
+              <option value="premium" style="background:#1a1a2e">Premium 4K (30 Days)</option>
+              <option value="standard" style="background:#1a1a2e">Standard HD (30 Days)</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="submit-add-user-btn" class="btn btn-primary" style="border-radius:12px; padding:14px; font-size:14px; font-weight:800; margin-top:8px; background:linear-gradient(135deg, #32dc78 0%, #20ab55 100%); color:#000;">
+          CREATE USER PROFILE
+        </button>
+      </div>
+    `;
+
+    document.getElementById('submit-add-user-btn').onclick = async () => {
+      const name = document.getElementById('add-user-name').value.trim();
+      const email = document.getElementById('add-user-email').value.trim();
+      const password = document.getElementById('add-user-password').value.trim();
+      const role = document.getElementById('add-user-role').value;
+      const plan = document.getElementById('add-user-plan').value;
+
+      if (!name || !email || !password || password.length < 6) {
+        UI.toast('Please provide valid name, email, and password (min 6 characters).', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('submit-add-user-btn');
+      UI.setLoading(btn, true);
+
+      try {
+        if (window.sb) {
+          // Sign up via Supabase Auth
+          const { data, error } = await window.sb.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: name } }
+          });
+
+          if (error) throw error;
+
+          const createdUserId = data?.user?.id;
+          if (createdUserId) {
+            const isAdmin = role === 'admin';
+            
+            // Upsert profile record in public.profiles table
+            await window.sb.from('profiles').upsert({
+              id: createdUserId,
+              full_name: name,
+              email: email,
+              is_admin: isAdmin,
+              admin: isAdmin,
+              role: role,
+              created_at: new Date().toISOString()
+            });
+
+            // Grant initial plan if selected
+            if (plan !== 'none') {
+              const endDate = new Date();
+              endDate.setDate(endDate.getDate() + 30);
+              await window.sb.from('subscriptions').insert({
+                user_id: createdUserId,
+                plan_id: plan,
+                status: 'active',
+                start_date: new Date().toISOString(),
+                end_date: endDate.toISOString(),
+                source: 'admin_creation'
+              });
+            }
+          }
+
+          UI.toast(`User profile created for ${email}!`, 'success');
+          modal.style.display = 'none';
+          await loadUsersList();
+          await loadMetrics();
+        }
+      } catch (err) {
+        UI.toast(err.message || 'Failed to create user profile.', 'error');
+      } finally {
+        UI.setLoading(btn, false);
+      }
+    };
+  }
+
+  // ── INSPECT USER DETAILS MODAL ──
+  async function openUserDetailsModal(userId) {
+    const modal = document.getElementById('admin-show-modal');
+    const modalBody = document.getElementById('admin-modal-body');
+    const closeBtn = document.getElementById('admin-modal-close');
+
+    if (!modal || !modalBody) return;
+
+    modal.style.display = 'flex';
+    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+
+    modalBody.innerHTML = `
+      <div style="text-align:center; padding:30px 0;">
+        <div style="width:36px; height:36px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 12px;"></div>
+        <p style="color:rgba(229,226,225,0.5); font-size:13px;">Loading user profile details...</p>
+      </div>
+    `;
+
+    const user = userProfiles.find(u => u.id === userId) || await window.Auth.getProfile(userId);
+    const sub = await Subscriptions.getUserSubscription(userId);
+    const watchHistory = await Subscriptions.getWatchHistory(userId, 50);
+    const watchlist = await Subscriptions.getWatchlist(userId);
+
+    const isAdmin = user?.is_admin === true || user?.admin === true || user?.role === 'admin';
+    const avatarUrl = user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'User')}`;
+
+    modalBody.innerHTML = `
+      <div style="display:flex; align-items:center; gap:20px; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div style="width:64px; height:64px; border-radius:50%; overflow:hidden; border:3px solid ${isAdmin ? '#14d1ff' : 'rgba(255,255,255,0.2)'}; flex-shrink:0;">
+          <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
+        </div>
+        <div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <h2 style="font-size:22px; font-weight:900; color:#fff;">${user?.full_name || 'CineStream Member'}</h2>
+            <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff;' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.7);'}">${isAdmin ? 'ADMINISTRATOR' : 'MEMBER'}</span>
+          </div>
+          <p style="font-size:13px; color:rgba(229,226,225,0.6); margin-top:2px;">${user?.email || 'No email registered'}</p>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px; margin-bottom:24px;">
+        <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block; margin-bottom:4px;">Subscription Status</span>
+          <span style="font-size:14px; font-weight:800; color:${sub ? '#32dc78' : '#ff6b6b'};">${sub ? 'ACTIVE (' + sub.plan_id.toUpperCase() + ')' : 'INACTIVE'}</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block; margin-bottom:4px;">Watch History Titles</span>
+          <span style="font-size:14px; font-weight:800; color:#fff;">${watchHistory.length} Shows</span>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.03); padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block; margin-bottom:4px;">Watchlist Bookmarks</span>
+          <span style="font-size:14px; font-weight:800; color:#fff;">${watchlist.length} Bookmarks</span>
+        </div>
+      </div>
+
+      <div style="font-size:11px; color:rgba(229,226,225,0.4); font-family:monospace; background:rgba(0,0,0,0.4); padding:12px; border-radius:10px; margin-bottom:20px; word-break:break-all;">
+        Supabase User ID: ${userId}
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:flex-end;">
+        <button onclick="AdminPage.grantUserSubscription('${userId}')" class="btn btn-secondary-outline btn-sm" style="border-radius:10px; color:#32dc78; border-color:rgba(50,220,120,0.4);">
+          Grant 30D Plan
+        </button>
+        <button onclick="AdminPage.toggleUserAdmin('${userId}', ${!isAdmin})" class="btn btn-primary btn-sm" style="border-radius:10px;">
+          ${isAdmin ? 'Demote User' : 'Make Administrator'}
+        </button>
+      </div>
+    `;
   }
 
   async function toggleUserAdmin(userId, makeAdmin) {
@@ -571,10 +853,10 @@ const AdminPage = (() => {
     }
   }
 
-  // ── GIFT CODES MANAGEMENT ──
+  // ── GIFT CODES MANAGEMENT (Adding & Editing Options) ──
   async function loadGiftCodes() {
     const tableBody = document.getElementById('admin-giftcodes-table-body');
-    const createBtn = document.getElementById('create-code-btn');
+    const saveBtn = document.getElementById('save-code-btn');
     const genRandomBtn = document.getElementById('gen-random-code-btn');
     const codeInput = document.getElementById('new-code-input');
 
@@ -590,19 +872,50 @@ const AdminPage = (() => {
     }
 
     const renderCodes = () => {
-      if (activeGiftCodes.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="5" style="padding:24px; text-align:center; color:rgba(229,226,225,0.4);">No gift codes found</td></tr>`;
+      const searchQ = (document.getElementById('admin-gift-search')?.value || '').toLowerCase().trim();
+      const filtered = activeGiftCodes.filter(c => !searchQ || c.code.toLowerCase().includes(searchQ));
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="5" style="padding:24px; text-align:center; color:rgba(229,226,225,0.4);">No voucher codes found</td></tr>`;
         return;
       }
 
-      tableBody.innerHTML = activeGiftCodes.map(code => `
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.05);">
-          <td style="padding:10px 12px; font-weight:800; font-family:monospace; color:#ffc832;">${code.code}</td>
-          <td style="padding:10px 12px; font-size:12px; text-transform:capitalize;">${code.plan_id}</td>
-          <td style="padding:10px 12px; font-size:12px;">${code.duration_days} Days</td>
-          <td style="padding:10px 12px; font-size:12px;">${code.usage_count || 0} / ${code.max_uses || 100}</td>
-          <td style="padding:10px 12px;">
-            <button onclick="AdminPage.deleteGiftCode('${code.id}')" class="btn btn-ghost btn-sm" style="color:#ff6b6b; font-size:11px; padding:2px 8px;">Delete</button>
+      tableBody.innerHTML = filtered.map(code => `
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+          
+          <td style="padding:12px 14px; font-weight:800; font-family:monospace; color:#ffc832; font-size:14px;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span>${code.code}</span>
+              <button onclick="AdminPage.copyGiftCode('${code.code}')" style="background:none; border:none; color:rgba(229,226,225,0.4); cursor:pointer; padding:2px;" title="Copy Code">
+                <span class="material-symbols-outlined" style="font-size:15px;">content_copy</span>
+              </button>
+            </div>
+          </td>
+
+          <td style="padding:12px 14px; font-size:12.5px; text-transform:capitalize; color:#fff;">
+            ${code.plan_id}
+          </td>
+
+          <td style="padding:12px 14px; font-size:12.5px; color:rgba(229,226,225,0.8);">
+            ${code.duration_days} Days
+          </td>
+
+          <td style="padding:12px 14px; font-size:12.5px;">
+            <span style="font-weight:700; color:${(code.usage_count||0) >= (code.max_uses||100) ? '#ff6b6b' : '#32dc78'};">${code.usage_count || 0}</span> / ${code.max_uses || 100}
+          </td>
+
+          <td style="padding:12px 14px; text-align:right;">
+            <div style="display:flex; gap:6px; justify-content:flex-end;">
+              
+              <button onclick="AdminPage.editGiftCode('${code.id}')" class="btn btn-ghost btn-sm" style="font-size:11px; padding:4px 10px; border:1px solid rgba(255,255,255,0.15); border-radius:6px;">
+                Edit
+              </button>
+
+              <button onclick="AdminPage.deleteGiftCode('${code.id}')" class="btn btn-ghost btn-sm" style="color:#ff6b6b; font-size:11px; padding:4px 10px; border-radius:6px; border-color:rgba(255,107,107,0.2);">
+                Delete
+              </button>
+
+            </div>
           </td>
         </tr>
       `).join('');
@@ -610,62 +923,140 @@ const AdminPage = (() => {
 
     renderCodes();
 
+    const searchInput = document.getElementById('admin-gift-search');
+    if (searchInput) searchInput.oninput = renderCodes;
+
     if (genRandomBtn && codeInput) {
       genRandomBtn.onclick = () => {
         codeInput.value = 'CINE' + Math.random().toString(36).substring(2, 8).toUpperCase();
       };
     }
 
-    if (createBtn) {
-      createBtn.onclick = async () => {
-        const code = (document.getElementById('new-code-input')?.value || '').trim().toUpperCase();
-        const plan = document.getElementById('new-code-plan')?.value || 'premium';
-        const days = parseInt(document.getElementById('new-code-days')?.value || '30');
-        const uses = parseInt(document.getElementById('new-code-uses')?.value || '100');
+    if (saveBtn) {
+      saveBtn.onclick = () => saveGiftCode();
+    }
+  }
 
-        if (!code) {
-          UI.toast('Please enter a voucher code.', 'warning');
-          return;
+  // ── SAVE / EDIT GIFT CODE ──
+  async function saveGiftCode() {
+    const editId = document.getElementById('edit-code-id')?.value;
+    const code = (document.getElementById('new-code-input')?.value || '').trim().toUpperCase();
+    const plan = document.getElementById('new-code-plan')?.value || 'premium';
+    const days = parseInt(document.getElementById('new-code-days')?.value || '30');
+    const uses = parseInt(document.getElementById('new-code-uses')?.value || '100');
+
+    if (!code) {
+      UI.toast('Please enter a voucher code.', 'warning');
+      return;
+    }
+
+    try {
+      if (window.sb) {
+        if (editId) {
+          // Update existing code
+          await window.sb.from('gift_codes').update({
+            code: code,
+            plan_id: plan,
+            duration_days: days,
+            max_uses: uses
+          }).eq('id', editId);
+          UI.toast(`Voucher code ${code} updated successfully!`, 'success');
+        } else {
+          // Create new code
+          await window.sb.from('gift_codes').insert({
+            code: code,
+            plan_id: plan,
+            duration_days: days,
+            max_uses: uses,
+            usage_count: 0
+          });
+          UI.toast(`Gift code ${code} created successfully!`, 'success');
         }
 
-        try {
-          if (window.sb) {
-            await window.sb.from('gift_codes').insert({
-              code: code,
-              plan_id: plan,
-              duration_days: days,
-              max_uses: uses,
-              usage_count: 0
-            });
-            UI.toast(`Gift code ${code} created!`, 'success');
-            if (codeInput) codeInput.value = '';
-            await loadGiftCodes();
-          }
-        } catch (err) {
-          UI.toast('Failed to create code.', 'error');
-        }
-      };
+        resetGiftCodeForm();
+        await loadGiftCodes();
+      }
+    } catch (err) {
+      UI.toast('Failed to save voucher code.', 'error');
+    }
+  }
+
+  function editGiftCode(id) {
+    const codeObj = activeGiftCodes.find(c => c.id === id);
+    if (!codeObj) return;
+
+    document.getElementById('edit-code-id').value = codeObj.id;
+    document.getElementById('new-code-input').value = codeObj.code;
+    document.getElementById('new-code-plan').value = codeObj.plan_id || 'premium';
+    document.getElementById('new-code-days').value = codeObj.duration_days || 30;
+    document.getElementById('new-code-uses').value = codeObj.max_uses || 100;
+
+    const titleEl = document.getElementById('gift-form-title');
+    const btnText = document.getElementById('save-code-btn-text');
+    const cancelBtn = document.getElementById('cancel-edit-code-btn');
+
+    if (titleEl) titleEl.textContent = 'Edit Gift Voucher';
+    if (btnText) btnText.textContent = 'UPDATE VOUCHER CODE';
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
+
+    // Scroll to form on mobile
+    document.getElementById('gift-code-form-card')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function resetGiftCodeForm() {
+    document.getElementById('edit-code-id').value = '';
+    document.getElementById('new-code-input').value = '';
+    document.getElementById('new-code-days').value = '30';
+    document.getElementById('new-code-uses').value = '100';
+
+    const titleEl = document.getElementById('gift-form-title');
+    const btnText = document.getElementById('save-code-btn-text');
+    const cancelBtn = document.getElementById('cancel-edit-code-btn');
+
+    if (titleEl) titleEl.textContent = 'Create New Gift Voucher';
+    if (btnText) btnText.textContent = 'CREATE VOUCHER CODE';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+  }
+
+  function copyGiftCode(codeStr) {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(codeStr);
+      UI.toast(`Voucher code "${codeStr}" copied to clipboard!`, 'success');
     }
   }
 
   async function deleteGiftCode(id) {
-    try {
-      if (window.sb) {
-        await window.sb.from('gift_codes').delete().eq('id', id);
-        UI.toast('Gift code removed.', 'info');
-        await loadGiftCodes();
+    UI.showModal({
+      title: 'Delete Gift Code',
+      content: 'Are you sure you want to delete this promotional gift voucher code?',
+      confirmText: 'Delete Code',
+      cancelText: 'Cancel',
+      dangerous: true,
+      onConfirm: async () => {
+        try {
+          if (window.sb) {
+            await window.sb.from('gift_codes').delete().eq('id', id);
+            UI.toast('Gift code removed.', 'info');
+            await loadGiftCodes();
+          }
+        } catch (e) {
+          UI.toast('Failed to delete gift code.', 'error');
+        }
       }
-    } catch (e) {
-      UI.toast('Failed to delete gift code.', 'error');
-    }
+    });
   }
 
   return {
     init,
     testShowStream,
     inspectShowDetails,
+    openAddUserModal,
+    openUserDetailsModal,
     toggleUserAdmin,
     grantUserSubscription,
+    editGiftCode,
+    resetGiftCodeForm,
+    copyGiftCode,
     deleteGiftCode
   };
 })();
