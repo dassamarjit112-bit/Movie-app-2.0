@@ -544,7 +544,7 @@ const AdminPage = (() => {
     };
   }
 
-  // ── INSPECT USER DETAILS MODAL ──
+  // ── INSPECT USER DETAILS MEGA MODAL (FULL SCREEN DASHBOARD) ──
   async function openUserDetailsModal(userId) {
     const modal = document.getElementById('admin-show-modal');
     const modalBody = document.getElementById('admin-modal-body');
@@ -556,9 +556,9 @@ const AdminPage = (() => {
     if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
 
     modalBody.innerHTML = `
-      <div style="text-align:center; padding:40px 0;">
-        <div style="width:40px; height:40px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 14px;"></div>
-        <p style="color:rgba(229,226,225,0.6); font-size:14px;">Loading user profile details...</p>
+      <div style="text-align:center; padding:60px 0;">
+        <div style="width:52px; height:52px; border:4px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 18px;"></div>
+        <p style="color:rgba(229,226,225,0.7); font-size:16px;">Fetching user profile, watch history, and bookmarks...</p>
       </div>
     `;
 
@@ -568,50 +568,165 @@ const AdminPage = (() => {
     const watchlist = await Subscriptions.getWatchlist(userId);
 
     const isAdmin = user?.is_admin === true || user?.admin === true || user?.role === 'admin';
-    const avatarUrl = user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'User')}`;
+    const avatarUrl = user?.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user?.full_name || 'User')}&backgroundColor=e50914&textColor=ffffff`;
+    const email = user?.email || (user?.full_name ? user.full_name.toLowerCase().replace(/\s+/g, '') + '@cinestream.app' : 'user@cinestream.app');
+    
+    // Days remaining calculation
+    let remainingDays = 0;
+    if (sub && sub.end_date) {
+      const diffMs = new Date(sub.end_date) - new Date();
+      remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    }
 
     modalBody.innerHTML = `
-      <div style="display:flex; align-items:center; gap:24px; margin-bottom:28px; padding-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.1);">
-        <div style="width:72px; height:72px; border-radius:50%; overflow:hidden; border:3px solid ${isAdmin ? '#14d1ff' : 'rgba(255,255,255,0.2)'}; flex-shrink:0; box-shadow:0 8px 24px rgba(0,0,0,0.4);">
-          <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
-        </div>
-        <div>
-          <div style="display:flex; align-items:center; gap:10px;">
-            <h2 style="font-size:24px; font-weight:900; color:#fff;">${user?.full_name || 'CineStream Member'}</h2>
-            <span style="font-size:11px; font-weight:800; padding:3px 10px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff;' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.7);'}">${isAdmin ? 'ADMINISTRATOR' : 'MEMBER'}</span>
+      <!-- User Hero Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:24px; margin-bottom:32px; padding-bottom:28px; border-bottom:1px solid rgba(255,255,255,0.12);">
+        <div style="display:flex; align-items:center; gap:24px;">
+          <div style="width:84px; height:84px; border-radius:50%; overflow:hidden; border:3px solid ${isAdmin ? '#14d1ff' : (sub ? '#ffc832' : 'rgba(255,255,255,0.2)')}; flex-shrink:0; box-shadow:0 8px 24px rgba(0,0,0,0.5);" class="animate-float">
+            <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
           </div>
-          <p style="font-size:14px; color:rgba(229,226,225,0.65); margin-top:4px;">${user?.email || 'Registered User'}</p>
+          <div>
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+              <h2 style="font-size:32px; font-weight:900; color:#fff;">${user?.full_name || 'CineStream Member'}</h2>
+              <span style="font-size:12px; font-weight:900; padding:5px 14px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff; border:1px solid rgba(20,209,255,0.4);' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.7);'}">${isAdmin ? '👑 ADMINISTRATOR' : '👤 MEMBER'}</span>
+              ${sub ? `<span style="font-size:12px; font-weight:900; padding:5px 14px; border-radius:100px; background:rgba(255,200,50,0.2); color:#ffc832; border:1px solid rgba(255,200,50,0.4);">⭐ VIP ${sub.plan_id.toUpperCase()}</span>` : ''}
+            </div>
+            <p style="font-size:16px; color:rgba(229,226,225,0.75); margin-top:6px; font-weight:500;">${email}</p>
+            <div style="margin-top:8px;">
+              <span class="copy-pill" onclick="AdminPage.copyGiftCode('${userId}')" title="Click to Copy Supabase UUID">
+                <span>Supabase ID: ${userId}</span>
+                <span class="material-symbols-outlined" style="font-size:14px; color:#14d1ff;">content_copy</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;">
+          <button onclick="AdminPage.grantUserSubscription('${userId}')" class="btn btn-secondary-outline btn-shimmer" style="border-radius:14px; padding:12px 24px; font-size:14px; font-weight:800; color:#32dc78; border-color:rgba(50,220,120,0.4); background:rgba(50,220,120,0.08);">
+            <span class="material-symbols-outlined" style="font-size:20px;">workspace_premium</span>
+            <span>+ 30-Day VIP Grant</span>
+          </button>
+          
+          <button onclick="AdminPage.toggleUserAdmin('${userId}', ${!isAdmin})" class="btn btn-primary" style="border-radius:14px; padding:12px 24px; font-size:14px; font-weight:800;">
+            <span class="material-symbols-outlined" style="font-size:20px;">admin_panel_settings</span>
+            <span>${isAdmin ? 'Demote User' : 'Make Administrator'}</span>
+          </button>
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:16px; margin-bottom:28px;">
-        <div style="background:rgba(255,255,255,0.03); padding:18px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
-          <span style="font-size:12px; color:rgba(229,226,225,0.5); display:block; margin-bottom:6px;">Subscription Status</span>
-          <span style="font-size:15px; font-weight:900; color:${sub ? '#32dc78' : '#ff6b6b'};">${sub ? 'ACTIVE (' + sub.plan_id.toUpperCase() + ')' : 'INACTIVE'}</span>
+      <!-- Quick User Metrics Row -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-bottom:32px;">
+        <div style="background:rgba(255,255,255,0.04); padding:20px 24px; border-radius:18px; border:1px solid rgba(255,255,255,0.1);">
+          <span style="font-size:12px; font-weight:800; color:rgba(229,226,225,0.55); text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:6px;">Subscription Status</span>
+          <span style="font-size:18px; font-weight:900; color:${sub ? '#32dc78' : '#ff6b6b'}; display:flex; align-items:center; gap:6px;">
+            ${sub ? '● ACTIVE (' + remainingDays + ' Days Left)' : '○ INACTIVE MEMBER'}
+          </span>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03); padding:18px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
-          <span style="font-size:12px; color:rgba(229,226,225,0.5); display:block; margin-bottom:6px;">Watch History Titles</span>
-          <span style="font-size:15px; font-weight:900; color:#fff;">${watchHistory.length} Shows</span>
+        <div style="background:rgba(255,255,255,0.04); padding:20px 24px; border-radius:18px; border:1px solid rgba(255,255,255,0.1);">
+          <span style="font-size:12px; font-weight:800; color:rgba(229,226,225,0.55); text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:6px;">Watch History</span>
+          <span style="font-size:18px; font-weight:900; color:#fff; display:flex; align-items:center; gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:20px; color:#14d1ff;">history</span>
+            <span>${watchHistory.length} Titles Viewed</span>
+          </span>
         </div>
 
-        <div style="background:rgba(255,255,255,0.03); padding:18px; border-radius:14px; border:1px solid rgba(255,255,255,0.08);">
-          <span style="font-size:12px; color:rgba(229,226,225,0.5); display:block; margin-bottom:6px;">Watchlist Bookmarks</span>
-          <span style="font-size:15px; font-weight:900; color:#fff;">${watchlist.length} Bookmarks</span>
+        <div style="background:rgba(255,255,255,0.04); padding:20px 24px; border-radius:18px; border:1px solid rgba(255,255,255,0.1);">
+          <span style="font-size:12px; font-weight:800; color:rgba(229,226,225,0.55); text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:6px;">Watchlist Bookmarks</span>
+          <span style="font-size:18px; font-weight:900; color:#fff; display:flex; align-items:center; gap:6px;">
+            <span class="material-symbols-outlined" style="font-size:20px; color:#ffc832;">bookmark</span>
+            <span>${watchlist.length} Bookmarked</span>
+          </span>
+        </div>
+
+        <div style="background:rgba(255,255,255,0.04); padding:20px 24px; border-radius:18px; border:1px solid rgba(255,255,255,0.1);">
+          <span style="font-size:12px; font-weight:800; color:rgba(229,226,225,0.55); text-transform:uppercase; letter-spacing:0.08em; display:block; margin-bottom:6px;">Country Region</span>
+          <span style="font-size:18px; font-weight:900; color:#fff; display:flex; align-items:center; gap:6px;">
+            <span>${user?.country ? user.country.toUpperCase() : 'GLOBAL'}</span>
+          </span>
         </div>
       </div>
 
-      <div style="font-size:12px; color:rgba(229,226,225,0.5); font-family:monospace; background:rgba(0,0,0,0.5); padding:14px; border-radius:12px; margin-bottom:24px; word-break:break-all;">
-        Supabase User ID: ${userId}
-      </div>
+      <!-- 2-Column Split User Inspection Content -->
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:32px;" class="admin-gift-layout">
+        
+        <!-- Left Column: Raw Supabase Metadata & Profile Json -->
+        <div style="background:rgba(255,255,255,0.02); padding:28px; border-radius:22px; border:1px solid rgba(255,255,255,0.08);">
+          <h4 style="font-size:18px; font-weight:900; color:#14d1ff; margin-bottom:16px;">Supabase Profile Metadata</h4>
+          
+          <div style="display:flex; flex-direction:column; gap:12px; font-size:14px;">
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
+              <span style="color:rgba(229,226,225,0.5); font-weight:600;">Full Name</span>
+              <span style="color:#fff; font-weight:800;">${user?.full_name || 'N/A'}</span>
+            </div>
 
-      <div style="display:flex; gap:12px; justify-content:flex-end;">
-        <button onclick="AdminPage.grantUserSubscription('${userId}')" class="btn btn-secondary-outline" style="border-radius:12px; color:#32dc78; border-color:rgba(50,220,120,0.4); font-size:13.5px; font-weight:700;">
-          Grant 30D Plan
-        </button>
-        <button onclick="AdminPage.toggleUserAdmin('${userId}', ${!isAdmin})" class="btn btn-primary" style="border-radius:12px; font-size:13.5px; font-weight:800;">
-          ${isAdmin ? 'Demote User' : 'Make Administrator'}
-        </button>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
+              <span style="color:rgba(229,226,225,0.5); font-weight:600;">Email</span>
+              <span style="color:#fff; font-weight:800;">${email}</span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
+              <span style="color:rgba(229,226,225,0.5); font-weight:600;">Role System</span>
+              <span style="color:#14d1ff; font-weight:900;">${user?.role || (isAdmin ? 'admin' : 'user')}</span>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:8px;">
+              <span style="color:rgba(229,226,225,0.5); font-weight:600;">Created At</span>
+              <span style="color:rgba(229,226,225,0.85); font-weight:600;">${user?.created_at ? UI.formatDate(user.created_at) : 'N/A'}</span>
+            </div>
+          </div>
+
+          <div style="margin-top:24px;">
+            <span style="font-size:12px; font-weight:800; color:rgba(229,226,225,0.5); text-transform:uppercase; display:block; margin-bottom:8px;">Raw User Profile JSON Record</span>
+            <pre style="font-size:12px; font-family:monospace; background:rgba(0,0,0,0.6); padding:16px; border-radius:14px; border:1px solid rgba(255,255,255,0.08); color:#32dc78; overflow-x:auto; max-height:220px;">${JSON.stringify(user || {}, null, 2)}</pre>
+          </div>
+        </div>
+
+        <!-- Right Column: User Watch History & Bookmarks -->
+        <div style="display:flex; flex-direction:column; gap:24px;">
+          
+          <!-- Watch History -->
+          <div style="background:rgba(255,255,255,0.02); padding:28px; border-radius:22px; border:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+              <h4 style="font-size:18px; font-weight:900; color:#fff;">Viewing History (${watchHistory.length})</h4>
+            </div>
+
+            ${watchHistory.length === 0 ? `
+              <p style="font-size:14px; color:rgba(229,226,225,0.45); text-align:center; padding:24px 0;">No titles in watch history yet.</p>
+            ` : `
+              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:14px; max-height:260px; overflow-y:auto; padding-right:8px;">
+                ${watchHistory.map(item => `
+                  <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:10px; border:1px solid rgba(255,255,255,0.08);">
+                    <div style="font-weight:800; font-size:13px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.title}">${item.title || 'Movie / Show'}</div>
+                    <div style="font-size:11px; color:rgba(229,226,225,0.5); margin-top:4px;">ID: ${item.content_id}</div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+
+          <!-- Watchlist Bookmarks -->
+          <div style="background:rgba(255,255,255,0.02); padding:28px; border-radius:22px; border:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+              <h4 style="font-size:18px; font-weight:900; color:#fff;">Watchlist Bookmarks (${watchlist.length})</h4>
+            </div>
+
+            ${watchlist.length === 0 ? `
+              <p style="font-size:14px; color:rgba(229,226,225,0.45); text-align:center; padding:24px 0;">No titles saved in watchlist.</p>
+            ` : `
+              <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:14px; max-height:220px; overflow-y:auto; padding-right:8px;">
+                ${watchlist.map(item => `
+                  <div style="background:rgba(255,255,255,0.04); border-radius:12px; padding:10px; border:1px solid rgba(255,255,255,0.08);">
+                    <div style="font-weight:800; font-size:13px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.title}">${item.title || 'Saved Item'}</div>
+                    <div style="font-size:11px; color:#ffc832; margin-top:4px;">Bookmarked</div>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+
+        </div>
+
       </div>
     `;
   }
