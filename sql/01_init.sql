@@ -22,6 +22,7 @@ alter table public.profiles add column if not exists role text default 'user';
 
 alter table public.profiles enable row level security;
 drop policy if exists "Public profiles are viewable by everyone" on public.profiles;
+drop policy if exists "Users can view their own profile" on public.profiles;
 drop policy if exists "Users can update their own profile" on public.profiles;
 
 create policy "Public profiles are viewable by everyone" 
@@ -50,7 +51,6 @@ create trigger on_auth_user_created
 
 -- =========================================================================
 -- 2. Subscriptions Table
--- Fixed RLS to include `WITH CHECK` for INSERTS to work.
 create table if not exists public.subscriptions (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users on delete cascade not null,
@@ -66,10 +66,15 @@ create table if not exists public.subscriptions (
 
 alter table public.subscriptions enable row level security;
 drop policy if exists "Users can view their own subscriptions" on public.subscriptions;
+drop policy if exists "Users can view their own subscription" on public.subscriptions;
 drop policy if exists "Service role or System can manage subscriptions" on public.subscriptions;
 drop policy if exists "Users can manage their own subscriptions" on public.subscriptions;
+drop policy if exists "Anyone authenticated can view subscriptions" on public.subscriptions;
 
--- Let users insert/view their own subscriptions
+create policy "Anyone authenticated can view subscriptions" 
+  on public.subscriptions for select 
+  using (auth.role() = 'authenticated');
+
 create policy "Users can manage their own subscriptions" 
   on public.subscriptions for all 
   using (auth.uid() = user_id) 

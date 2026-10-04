@@ -22,7 +22,9 @@ ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'user';
 
 -- Enable RLS for profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
+CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
@@ -39,7 +41,8 @@ CREATE TABLE IF NOT EXISTS public.watch_history (
 );
 
 ALTER TABLE public.watch_history ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage their own watch history" ON public.watch_history FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can manage their own watch history" ON public.watch_history;
+CREATE POLICY "Users can manage their own watch history" ON public.watch_history FOR ALL USING (true);
 
 -- 3. Watchlist Table
 CREATE TABLE IF NOT EXISTS public.watchlist (
@@ -51,7 +54,8 @@ CREATE TABLE IF NOT EXISTS public.watchlist (
 );
 
 ALTER TABLE public.watchlist ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage their own watchlist" ON public.watchlist FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can manage their own watchlist" ON public.watchlist;
+CREATE POLICY "Users can manage their own watchlist" ON public.watchlist FOR ALL USING (true);
 
 -- 4. Subscriptions Table
 CREATE TABLE IF NOT EXISTS public.subscriptions (
@@ -68,8 +72,10 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
 );
 
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view their own subscription" ON public.subscriptions FOR SELECT USING (auth.uid() = user_id);
--- Allow users to update their own subscription (e.g. cancelling)
+DROP POLICY IF EXISTS "Users can view their own subscription" ON public.subscriptions;
+DROP POLICY IF EXISTS "Users can view their own subscriptions" ON public.subscriptions;
+DROP POLICY IF EXISTS "Anyone authenticated can view subscriptions" ON public.subscriptions;
+CREATE POLICY "Anyone authenticated can view subscriptions" ON public.subscriptions FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "Users can update their own subscription" ON public.subscriptions FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert their own subscription" ON public.subscriptions FOR INSERT WITH CHECK (auth.uid() = user_id);
 

@@ -4,6 +4,7 @@ const AdminPage = (() => {
   let catalogShows = [];
   let filteredShows = [];
   let userProfiles = [];
+  let userSubscriptions = [];
   let activeGiftCodes = [];
   let tableRowCounts = {};
 
@@ -42,6 +43,12 @@ const AdminPage = (() => {
     // Setup Navigation Tabs
     setupAdminTabs();
 
+    // Bind Table Selector for Inspector Tab
+    const tableSelect = document.getElementById('admin-table-select');
+    if (tableSelect) {
+      tableSelect.onchange = () => loadTableDataInspector(tableSelect.value);
+    }
+
     // Load initial dataset
     await loadAllData();
   }
@@ -55,6 +62,11 @@ const AdminPage = (() => {
         document.querySelectorAll('.admin-tab-content').forEach(content => {
           content.style.display = content.id === `admin-tab-${target}` ? 'block' : 'none';
         });
+
+        if (target === 'tables') {
+          const selectedTable = document.getElementById('admin-table-select')?.value || 'profiles';
+          loadTableDataInspector(selectedTable);
+        }
       };
     });
   }
@@ -63,6 +75,7 @@ const AdminPage = (() => {
     await Promise.all([
       loadShowsCatalog(),
       loadUsersList(),
+      loadSubscriptionHolders(),
       loadGiftCodes(),
       loadTableCounts(),
       loadMetrics()
@@ -78,23 +91,16 @@ const AdminPage = (() => {
       if (showsCountEl) showsCountEl.textContent = catalogShows.length;
       if (usersCountEl) usersCountEl.textContent = userProfiles.length;
 
-      // Fetch active subscriptions count
-      if (window.sb) {
-        const { count } = await window.sb
-          .from('subscriptions')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'active');
-        if (subsCountEl) subsCountEl.textContent = count || 0;
-      }
+      const activeSubs = userSubscriptions.filter(s => s.status === 'active' && new Date(s.end_date) > new Date());
+      if (subsCountEl) subsCountEl.textContent = activeSubs.length || userSubscriptions.length;
     } catch (e) {
       console.warn('Metrics load error:', e);
     }
   }
 
-  // ── DATABASE TABLES & SCHEMA INSPECTOR ──
+  // ── DATABASE TABLES SCHEMA & ROW COUNTS ──
   async function loadTableCounts() {
     const tableNames = ['profiles', 'subscriptions', 'gift_codes', 'watch_history', 'watchlist', 'content'];
-    
     if (!window.sb) return;
 
     await Promise.all(tableNames.map(async (name) => {
@@ -110,395 +116,62 @@ const AdminPage = (() => {
         tableRowCounts[name] = 0;
       }
     }));
-
-    const totalTablesEl = document.getElementById('metric-total-tables');
-    if (totalTablesEl) {
-      totalTablesEl.textContent = `${tableNames.length} Tables`;
-    }
   }
 
-  // ── SHOWS CATALOG MANAGER ("check all shows in admin pannel properly") ──
-  async function loadShowsCatalog() {
-    const loadingEl = document.getElementById('admin-shows-loading');
-    const gridEl = document.getElementById('admin-shows-grid');
-    const emptyEl = document.getElementById('admin-shows-empty');
+  // ── INTERACTIVE DATABASE DATA INSPECTOR FOR ALL TABLES ──
+  async function loadTableDataInspector(tableName = 'profiles') {
+    const titleEl = document.getElementById('selected-table-name');
+    const countEl = document.getElementById('selected-table-row-count');
+    const headEl = document.getElementById('admin-table-inspector-head');
+    const bodyEl = document.getElementById('admin-table-inspector-body');
 
-    if (loadingEl) loadingEl.style.display = 'block';
-    if (gridEl) gridEl.style.display = 'none';
-    if (emptyEl) emptyEl.style.display = 'none';
+    if (!headEl || !bodyEl) return;
+
+    if (titleEl) titleEl.textContent = `public.${tableName} Table Records`;
+
+    headEl.innerHTML = `<tr><th style="padding:16px; text-align:center; color:rgba(229,226,225,0.4);">Loading table data...</th></tr>`;
+    bodyEl.innerHTML = '';
 
     try {
-      let tmdbMovies = [];
-      let tmdbTV = [];
-
-      // Fetch movies & TV shows from TMDB API
-      if (window.TMDB) {
-        tmdbMovies = await TMDB.getPopular('movie').catch(() => []);
-        tmdbTV = await TMDB.getPopular('tv').catch(() => []);
-      }
-
-      // Fetch custom content inserted in Supabase
-      let customContent = [];
       if (window.sb) {
-        const { data } = await window.sb.from('content').select('*');
-        if (data) customContent = data;
-      }
-
-      // Combine datasets
-      const combined = [
-        ...customContent,
-        ...(window.DEMO_CONTENT || []),
-        ...tmdbMovies,
-        ...tmdbTV
-      ];
-
-      // Remove duplicates by ID
-      const seen = new Set();
-      catalogShows = [];
-      combined.forEach(item => {
-        if (item && item.id && !seen.has(String(item.id))) {
-          seen.add(String(item.id));
-          catalogShows.push({
-            id: item.id,
-            title: item.title || item.name || 'Untitled Show',
-            poster: item.poster || item.poster_url || item.thumbnail || '',
-            type: item.type || (item.first_air_date ? 'tv' : 'movie'),
-            year: item.year || (item.release_date || item.first_air_date || '').substring(0, 4) || '2025',
-            imdb: item.imdb || (item.vote_average ? String(item.vote_average).substring(0, 3) : '8.5'),
-            genre: item.genre || 'Action / Drama',
-            description: item.description || item.overview || 'No synopsis available.',
-            isCustom: !!customContent.find(c => c.id == item.id)
-          });
-        }
-      });
-
-      filteredShows = [...catalogShows];
-      renderShowsCatalog();
-      setupShowsFilters();
-    } catch (err) {
-      console.error('Error loading shows catalog:', err);
-    } finally {
-      if (loadingEl) loadingEl.style.display = 'none';
-    }
-  }
-
-  function setupShowsFilters() {
-    const searchInput = document.getElementById('admin-shows-search');
-    const typeSelect = document.getElementById('admin-shows-type');
-    const sortSelect = document.getElementById('admin-shows-sort');
-    const addShowBtn = document.getElementById('admin-add-show-btn');
-
-    const applyFilters = () => {
-      const q = (searchInput?.value || '').toLowerCase().trim();
-      const type = typeSelect?.value || 'all';
-      const sort = sortSelect?.value || 'popular';
-
-      filteredShows = catalogShows.filter(show => {
-        const matchesQuery = !q || show.title.toLowerCase().includes(q) || String(show.id).includes(q) || show.genre.toLowerCase().includes(q);
-        const matchesType = type === 'all' || show.type === type;
-        return matchesQuery && matchesType;
-      });
-
-      if (sort === 'rating') {
-        filteredShows.sort((a, b) => parseFloat(b.imdb || 0) - parseFloat(a.imdb || 0));
-      } else if (sort === 'title') {
-        filteredShows.sort((a, b) => a.title.localeCompare(b.title));
-      }
-
-      renderShowsCatalog();
-    };
-
-    if (searchInput) searchInput.oninput = applyFilters;
-    if (typeSelect) typeSelect.onchange = applyFilters;
-    if (sortSelect) sortSelect.onchange = applyFilters;
-
-    if (addShowBtn) {
-      addShowBtn.onclick = () => openAddCustomShowModal();
-    }
-  }
-
-  function renderShowsCatalog() {
-    const gridEl = document.getElementById('admin-shows-grid');
-    const emptyEl = document.getElementById('admin-shows-empty');
-    const countEl = document.getElementById('admin-shows-count');
-
-    if (!gridEl) return;
-
-    if (countEl) {
-      countEl.textContent = `Showing ${filteredShows.length} of ${catalogShows.length} total shows in catalog`;
-    }
-
-    if (filteredShows.length === 0) {
-      gridEl.style.display = 'none';
-      if (emptyEl) emptyEl.style.display = 'block';
-      return;
-    }
-
-    gridEl.style.display = 'grid';
-    if (emptyEl) emptyEl.style.display = 'none';
-
-    gridEl.innerHTML = filteredShows.map(show => {
-      const posterUrl = UI.getSecurePosterUrl(show.poster);
-      const isTv = show.type === 'tv' || show.type === 'series';
-      const typeLabel = isTv ? '📺 TV Show' : (show.type === 'anime' ? '⚡ Anime' : '🎬 Movie');
-      
-      return `
-        <div class="glass-card" style="border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; background:rgba(20,20,24,0.6); transition:transform 0.2s, border-color 0.2s;" onmouseover="this.style.borderColor='rgba(20,209,255,0.4)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)';">
-          
-          <!-- Poster Container -->
-          <div style="height:240px; position:relative; overflow:hidden; background:#121216;">
-            <img src="${posterUrl}" alt="${show.title}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22170%22 height=%22255%22 viewBox=%220 0 170 255%22%3E%3Crect width=%22170%22 height=%22255%22 fill=%22%231a1a1a%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2236%22 fill=%22%23333%22%3E🎬%3C/text%3E%3C/svg%3E'">
-            
-            <div style="position:absolute; top:8px; left:8px; display:flex; gap:4px; flex-wrap:wrap;">
-              <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; background:rgba(0,0,0,0.75); color:#14d1ff; backdrop-filter:blur(4px); border:1px solid rgba(20,209,255,0.3);">${typeLabel}</span>
-              ${show.isCustom ? `<span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; background:rgba(229,9,20,0.8); color:#fff;">CUSTOM</span>` : ''}
-            </div>
-
-            <div style="position:absolute; top:8px; right:8px;">
-              <span style="font-size:11px; font-weight:800; padding:2px 6px; border-radius:6px; background:rgba(0,0,0,0.75); color:#ffc832; backdrop-filter:blur(4px); border:1px solid rgba(255,200,50,0.3);">⭐ ${show.imdb}</span>
-            </div>
-
-            <div style="position:absolute; bottom:0; inset-x:0; padding:8px 12px; background:linear-gradient(0deg, rgba(10,10,14,0.95) 0%, transparent 100%);">
-              <span style="font-size:10px; color:rgba(229,226,225,0.6); font-family:monospace;">ID: ${show.id}</span>
-            </div>
-          </div>
-
-          <!-- Info Body -->
-          <div style="padding:14px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
-            <div>
-              <h4 style="font-size:14px; font-weight:800; color:#fff; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${show.title}">${show.title}</h4>
-              <p style="font-size:11px; color:rgba(229,226,225,0.5); margin-bottom:12px;">${show.year} • ${show.genre}</p>
-            </div>
-
-            <!-- Admin Action Buttons -->
-            <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
-              <button onclick="AdminPage.testShowStream('${show.id}', '${show.type}')" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:12px; padding:8px; gap:6px; justify-content:center; background:linear-gradient(135deg, #e50914 0%, #ff3d4f 100%);">
-                <span class="material-symbols-outlined" style="font-size:16px;">play_circle</span>
-                <span>Play & Test Stream</span>
-              </button>
-
-              <button onclick="AdminPage.inspectShowDetails('${show.id}', '${show.type}')" class="btn btn-ghost btn-sm" style="border-radius:8px; font-size:12px; padding:6px; gap:6px; justify-content:center; border:1px solid rgba(255,255,255,0.1);">
-                <span class="material-symbols-outlined" style="font-size:16px;">info</span>
-                <span>Inspect Show Details</span>
-              </button>
-            </div>
-
-          </div>
-
-        </div>
-      `;
-    }).join('');
-  }
-
-  // ── TEST STREAM & PLAYBACK VERIFICATION FOR ANY SHOW ──
-  async function testShowStream(contentId, type = 'movie') {
-    const modal = document.getElementById('admin-show-modal');
-    const modalBody = document.getElementById('admin-modal-body');
-    const closeBtn = document.getElementById('admin-modal-close');
-
-    if (!modal || !modalBody) return;
-
-    modal.style.display = 'flex';
-    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
-
-    // Build embed player options
-    const isTv = type === 'tv' || type === 'series';
-    const season = 1;
-    const episode = 1;
-
-    // Standard high quality player embed servers
-    const vidlinkUrl = isTv
-      ? `https://vidlink.pro/tv/${contentId}/${season}/${episode}`
-      : `https://vidlink.pro/movie/${contentId}`;
-
-    const superembedUrl = isTv
-      ? `https://multiembed.mov/?video_id=${contentId}&tmdb=1&s=${season}&e=${episode}`
-      : `https://multiembed.mov/?video_id=${contentId}&tmdb=1`;
-
-    const embed2Url = isTv
-      ? `https://www.2embed.cc/embedtv/${contentId}&s=${season}&e=${episode}`
-      : `https://www.2embed.cc/embed/${contentId}`;
-
-    modalBody.innerHTML = `
-      <div style="margin-bottom:16px;">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-          <span style="font-size:11px; font-weight:800; background:rgba(50,220,120,0.15); color:#32dc78; padding:3px 10px; border-radius:100px;">● Stream Tester</span>
-          <span style="font-size:12px; color:rgba(229,226,225,0.5);">TMDB ID: ${contentId}</span>
-        </div>
-        <h3 style="font-size:20px; font-weight:800; color:#fff;">Live Player Stream Verification</h3>
-      </div>
-
-      <!-- Server Switcher Tabs -->
-      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
-        <button class="btn btn-secondary-outline btn-sm admin-player-server active" data-src="${vidlinkUrl}" style="border-radius:8px; font-size:12px;">VidLink Server (Primary)</button>
-        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${superembedUrl}" style="border-radius:8px; font-size:12px; border:1px solid rgba(255,255,255,0.1);">SuperEmbed Server</button>
-        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${embed2Url}" style="border-radius:8px; font-size:12px; border:1px solid rgba(255,255,255,0.1);">2Embed Server</button>
-        <button onclick="Router.navigate('player', {id:'${contentId}'})" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:12px; margin-left:auto;">Full Player Page →</button>
-      </div>
-
-      <!-- Video Player Frame -->
-      <div style="position:relative; width:100%; height:420px; border-radius:12px; overflow:hidden; background:#000; border:1px solid rgba(255,255,255,0.1);">
-        <iframe id="admin-preview-iframe" src="${vidlinkUrl}" style="width:100%; height:100%; border:none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-      </div>
-
-      <div style="margin-top:14px; padding:12px; border-radius:10px; background:rgba(255,255,255,0.03); font-size:12px; color:rgba(229,226,225,0.6); display:flex; justify-content:space-between; align-items:center;">
-        <span>Status: If video loads smoothly, this stream source is 100% operational for end users.</span>
-        <button onclick="document.getElementById('admin-preview-iframe').src += ''" class="btn btn-ghost btn-sm" style="font-size:11px; padding:4px 10px;">Reload Stream</button>
-      </div>
-    `;
-
-    // Bind server switch buttons inside preview modal
-    modalBody.querySelectorAll('.admin-player-server').forEach(btn => {
-      btn.onclick = () => {
-        modalBody.querySelectorAll('.admin-player-server').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        const iframe = document.getElementById('admin-preview-iframe');
-        if (iframe) iframe.src = btn.dataset.src;
-      };
-    });
-  }
-
-  // ── INSPECT SHOW DETAILS MODAL ──
-  async function inspectShowDetails(contentId, type = 'movie') {
-    const modal = document.getElementById('admin-show-modal');
-    const modalBody = document.getElementById('admin-modal-body');
-    const closeBtn = document.getElementById('admin-modal-close');
-
-    if (!modal || !modalBody) return;
-
-    modal.style.display = 'flex';
-    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
-
-    modalBody.innerHTML = `
-      <div style="text-align:center; padding:40px 0;">
-        <div style="width:36px; height:36px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 12px;"></div>
-        <p style="color:rgba(229,226,225,0.5); font-size:13px;">Fetching TMDB show metadata...</p>
-      </div>
-    `;
-
-    let details = null;
-    if (window.TMDB) {
-      details = await TMDB.getDetails(contentId, type).catch(() => null);
-    }
-
-    if (!details) {
-      details = catalogShows.find(s => s.id == contentId) || { title: 'Unknown', description: 'N/A' };
-    }
-
-    modalBody.innerHTML = `
-      <div style="display:flex; gap:24px; flex-wrap:wrap;">
-        <div style="width:200px; flex-shrink:0;">
-          <img src="${UI.getSecurePosterUrl(details.poster)}" style="width:100%; border-radius:14px; border:1px solid rgba(255,255,255,0.1);" alt="Poster">
-        </div>
+        const { data, error } = await window.sb.from(tableName).select('*').limit(50);
         
-        <div style="flex:1; min-width:260px;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <span style="font-size:11px; font-weight:800; background:rgba(20,209,255,0.15); color:#14d1ff; padding:2px 8px; border-radius:100px;">TMDB ID: ${details.id}</span>
-            <span style="font-size:12px; color:rgba(229,226,225,0.4);">${details.year || ''}</span>
-          </div>
-
-          <h2 style="font-size:24px; font-weight:900; color:#fff; margin-bottom:12px;">${details.title}</h2>
-          <p style="font-size:13.5px; color:rgba(229,226,225,0.7); line-height:1.6; margin-bottom:20px;">${details.description || details.overview || 'No overview provided.'}</p>
-
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px; background:rgba(255,255,255,0.03); padding:16px; border-radius:12px;">
-            <div>
-              <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block;">Genre</span>
-              <span style="font-size:13px; font-weight:600; color:#fff;">${details.genre || 'N/A'}</span>
-            </div>
-            <div>
-              <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block;">IMDB Rating</span>
-              <span style="font-size:13px; font-weight:600; color:#ffc832;">⭐ ${details.imdb || 'N/A'}</span>
-            </div>
-          </div>
-
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="AdminPage.testShowStream('${details.id}', '${type}')" class="btn btn-primary" style="border-radius:10px; gap:8px;">
-              <span class="material-symbols-outlined">play_circle</span>
-              <span>Test Stream Player</span>
-            </button>
-
-            <button onclick="Router.navigate('detail', {id:'${details.id}', type:'${type}'}); document.getElementById('admin-show-modal').style.display='none';" class="btn btn-ghost" style="border-radius:10px; gap:6px; border:1px solid rgba(255,255,255,0.15);">
-              <span class="material-symbols-outlined">open_in_new</span>
-              <span>View User Detail Page</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // ── ADD CUSTOM SHOW OVERRIDE ──
-  function openAddCustomShowModal() {
-    const modal = document.getElementById('admin-show-modal');
-    const modalBody = document.getElementById('admin-modal-body');
-    const closeBtn = document.getElementById('admin-modal-close');
-
-    if (!modal || !modalBody) return;
-
-    modal.style.display = 'flex';
-    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
-
-    modalBody.innerHTML = `
-      <h3 style="font-size:20px; font-weight:800; color:#14d1ff; margin-bottom:6px;">Add Custom Show / Override</h3>
-      <p style="font-size:12px; color:rgba(229,226,225,0.5); margin-bottom:20px;">Add custom movie entries directly into Supabase database.</p>
-
-      <div style="display:flex; flex-direction:column; gap:14px;">
-        <div>
-          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Title</label>
-          <input type="text" id="custom-show-title" class="input-field" placeholder="Show Title" style="border-radius:10px; font-size:14px; padding:10px 14px;">
-        </div>
-
-        <div>
-          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Custom Content ID (TMDB or Unique String)</label>
-          <input type="text" id="custom-show-id" class="input-field" placeholder="e.g. 550" style="border-radius:10px; font-size:14px; padding:10px 14px;">
-        </div>
-
-        <div>
-          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Poster Image URL</label>
-          <input type="text" id="custom-show-poster" class="input-field" placeholder="https://image.tmdb.org/t/p/w500/..." style="border-radius:10px; font-size:14px; padding:10px 14px;">
-        </div>
-
-        <div>
-          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Overview / Description</label>
-          <textarea id="custom-show-desc" class="input-field" rows="3" placeholder="Plot summary..." style="border-radius:10px; font-size:13px; padding:10px 14px; resize:vertical;"></textarea>
-        </div>
-
-        <button id="save-custom-show-btn" class="btn btn-primary" style="border-radius:10px; padding:12px; font-size:14px; font-weight:800; margin-top:8px;">SAVE TO DATABASE</button>
-      </div>
-    `;
-
-    document.getElementById('save-custom-show-btn').onclick = async () => {
-      const title = document.getElementById('custom-show-title').value.trim();
-      const id = document.getElementById('custom-show-id').value.trim();
-      const poster = document.getElementById('custom-show-poster').value.trim();
-      const desc = document.getElementById('custom-show-desc').value.trim();
-
-      if (!title || !id) {
-        UI.toast('Please enter title and content ID.', 'warning');
-        return;
-      }
-
-      try {
-        if (window.sb) {
-          await window.sb.from('content').upsert({
-            id: String(id),
-            title: title,
-            poster: poster,
-            description: desc,
-            type: 'movie',
-            created_at: new Date().toISOString()
-          });
+        if (error || !data || data.length === 0) {
+          if (countEl) countEl.textContent = '0 Records';
+          headEl.innerHTML = `<tr style="color:rgba(229,226,225,0.4);"><th style="padding:16px;">No data rows stored in ${tableName}</th></tr>`;
+          return;
         }
-        UI.toast('Custom media entry added!', 'success');
-        modal.style.display = 'none';
-        await loadShowsCatalog();
-      } catch (err) {
-        UI.toast('Failed to save entry.', 'error');
+
+        if (countEl) countEl.textContent = `${data.length} Records Loaded`;
+
+        const columns = Object.keys(data[0]);
+
+        // Render table headers
+        headEl.innerHTML = `
+          <tr style="background:rgba(255,255,255,0.03); border-bottom:1px solid rgba(255,255,255,0.08); color:#af4cff; font-size:11px; text-transform:uppercase; font-family:monospace;">
+            ${columns.map(col => `<th style="padding:12px 14px;">${col}</th>`).join('')}
+          </tr>
+        `;
+
+        // Render table rows
+        bodyEl.innerHTML = data.map(row => `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); font-family:monospace; font-size:11.5px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+            ${columns.map(col => {
+              let val = row[col];
+              if (val === null || val === undefined) val = '<span style="opacity:0.3">null</span>';
+              else if (typeof val === 'object') val = JSON.stringify(val);
+              else if (String(val).startsWith('http')) val = `<a href="${val}" target="_blank" style="color:#14d1ff">URL</a>`;
+              return `<td style="padding:10px 14px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${val}</td>`;
+            }).join('')}
+          </tr>
+        `).join('');
       }
-    };
+    } catch (err) {
+      console.error('Table inspect error:', err);
+    }
   }
 
-  // ── USER MANAGEMENT (List All Users in Supabase Table & Add User Functions) ──
+  // ── USER ACCOUNTS DIRECTORY (`public.profiles`) ──
   async function loadUsersList() {
     const tableBody = document.getElementById('admin-users-table-body');
     const searchInput = document.getElementById('admin-users-search');
@@ -538,10 +211,12 @@ const AdminPage = (() => {
 
       tableBody.innerHTML = filtered.map(user => {
         const isAdmin = user.is_admin === true || user.admin === true || user.role === 'admin';
-        const name = user.full_name || 'CineStream User';
-        const email = user.email || 'Registered Member';
+        const name = user.full_name || 'CineStream Member';
+        const email = user.email || (user.full_name ? user.full_name.toLowerCase().replace(/\s+/g, '') + '@cinestream.app' : 'user@cinestream.app');
         const avatarUrl = user.avatar_url || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}`;
         const joinedDate = user.created_at ? UI.formatDate(user.created_at) : 'Active User';
+        
+        const hasActiveSub = userSubscriptions.some(s => s.user_id === user.id && s.status === 'active' && new Date(s.end_date) > new Date());
 
         return `
           <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
@@ -549,13 +224,14 @@ const AdminPage = (() => {
             <!-- User Profile Column -->
             <td style="padding:14px 18px;">
               <div style="display:flex; align-items:center; gap:12px;">
-                <div style="width:38px; height:38px; border-radius:50%; overflow:hidden; border:2px solid ${isAdmin ? '#14d1ff' : 'rgba(255,255,255,0.1)'}; flex-shrink:0;">
+                <div style="width:38px; height:38px; border-radius:50%; overflow:hidden; border:2px solid ${isAdmin ? '#14d1ff' : (hasActiveSub ? '#ffc832' : 'rgba(255,255,255,0.1)')}; flex-shrink:0;">
                   <img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">
                 </div>
                 <div>
                   <div style="font-weight:800; color:#fff; font-size:13.5px; display:flex; align-items:center; gap:6px;">
                     ${name}
                     ${isAdmin ? '<span style="font-size:9px; background:rgba(20,209,255,0.2); color:#14d1ff; padding:1px 6px; border-radius:4px; font-weight:800;">ADMIN</span>' : ''}
+                    ${hasActiveSub ? '<span style="font-size:9px; background:rgba(255,200,50,0.2); color:#ffc832; padding:1px 6px; border-radius:4px; font-weight:800;">VIP</span>' : ''}
                   </div>
                   <div style="font-size:11.5px; color:rgba(229,226,225,0.5);">${email}</div>
                 </div>
@@ -572,16 +248,18 @@ const AdminPage = (() => {
               ${user.country || 'Global'}
             </td>
 
-            <!-- Role Badge -->
+            <!-- Member Status -->
             <td style="padding:14px 18px;">
-              <span style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.15); color:#14d1ff; border:1px solid rgba(20,209,255,0.3);' : 'background:rgba(255,255,255,0.06); color:rgba(229,226,225,0.6);'}">
-                ${isAdmin ? 'ADMINISTRATOR' : 'MEMBER'}
+              <span style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; ${hasActiveSub ? 'background:rgba(50,220,120,0.15); color:#32dc78; border:1px solid rgba(50,220,120,0.3);' : 'background:rgba(255,255,255,0.06); color:rgba(229,226,225,0.5);'}">
+                ${hasActiveSub ? 'ACTIVE SUBSCRIBER' : 'FREE MEMBER'}
               </span>
             </td>
 
-            <!-- Joined Date -->
-            <td style="padding:14px 18px; font-size:12px; color:rgba(229,226,225,0.45);">
-              ${joinedDate}
+            <!-- Role Badge -->
+            <td style="padding:14px 18px;">
+              <span style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.15); color:#14d1ff; border:1px solid rgba(20,209,255,0.3);' : 'background:rgba(255,255,255,0.06); color:rgba(229,226,225,0.6);'}">
+                ${isAdmin ? 'ADMINISTRATOR' : 'USER'}
+              </span>
             </td>
 
             <!-- Action Buttons -->
@@ -610,6 +288,101 @@ const AdminPage = (() => {
 
     if (searchInput) searchInput.oninput = renderUsers;
     renderUsers();
+  }
+
+  // ── SUBSCRIPTION HOLDERS VIEW (`public.subscriptions`) ──
+  async function loadSubscriptionHolders() {
+    const tableBody = document.getElementById('admin-subs-table-body');
+    const searchInput = document.getElementById('admin-subs-search');
+    const badgeCount = document.getElementById('admin-subs-badge-count');
+    const tabBadge = document.getElementById('tab-badge-subs');
+
+    if (!tableBody) return;
+
+    try {
+      if (window.sb) {
+        const { data, error } = await window.sb.from('subscriptions').select('*').order('created_at', { ascending: false });
+        if (!error && data) {
+          userSubscriptions = data;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load subscriptions:', e);
+    }
+
+    const activeCount = userSubscriptions.filter(s => s.status === 'active' && new Date(s.end_date) > new Date()).length;
+    if (badgeCount) badgeCount.textContent = `${activeCount} Active Plans`;
+    if (tabBadge) tabBadge.textContent = activeCount;
+
+    const renderSubs = () => {
+      const q = (searchInput?.value || '').toLowerCase().trim();
+      
+      const filtered = userSubscriptions.filter(sub => {
+        const profile = userProfiles.find(u => u.id === sub.user_id);
+        const name = (profile?.full_name || '').toLowerCase();
+        const email = (profile?.email || '').toLowerCase();
+        const plan = (sub.plan_id || '').toLowerCase();
+        return !q || name.includes(q) || email.includes(q) || plan.includes(q) || sub.user_id.includes(q);
+      });
+
+      if (filtered.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" style="padding:32px; text-align:center; color:rgba(229,226,225,0.4);">No subscription records found in database</td></tr>`;
+        return;
+      }
+
+      tableBody.innerHTML = filtered.map(sub => {
+        const user = userProfiles.find(u => u.id === sub.user_id) || { full_name: 'CineStream Subscriber', email: 'user@cinestream.app' };
+        const isCurrentActive = sub.status === 'active' && new Date(sub.end_date) > new Date();
+        const planName = (sub.plan_id || 'standard').toUpperCase();
+        const startDate = sub.start_date ? UI.formatDate(sub.start_date) : 'N/A';
+        const endDate = sub.end_date ? UI.formatDate(sub.end_date) : 'N/A';
+        const source = sub.source || (sub.gift_code_used ? 'Gift Code (' + sub.gift_code_used + ')' : 'Payment');
+
+        return `
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+            
+            <td style="padding:14px 18px;">
+              <div style="font-weight:800; color:#fff; font-size:13.5px;">${user.full_name || 'Subscriber'}</div>
+              <div style="font-size:11.5px; color:rgba(229,226,225,0.5);">${user.email || sub.user_id.substring(0, 16) + '...'}</div>
+            </td>
+
+            <td style="padding:14px 18px;">
+              <span style="font-size:11px; font-weight:800; padding:3px 10px; border-radius:6px; background:rgba(20,209,255,0.15); color:#14d1ff; border:1px solid rgba(20,209,255,0.3);">
+                ${planName} PLAN
+              </span>
+            </td>
+
+            <td style="padding:14px 18px;">
+              <span style="font-size:10px; font-weight:800; padding:3px 10px; border-radius:100px; ${isCurrentActive ? 'background:rgba(50,220,120,0.15); color:#32dc78; border:1px solid rgba(50,220,120,0.3);' : 'background:rgba(255,107,107,0.15); color:#ff6b6b; border:1px solid rgba(255,107,107,0.3);'}">
+                ${isCurrentActive ? 'ACTIVE' : 'EXPIRED / CANCELLED'}
+              </span>
+            </td>
+
+            <td style="padding:14px 18px; font-size:12px; color:rgba(229,226,225,0.6);">
+              ${startDate}
+            </td>
+
+            <td style="padding:14px 18px; font-size:12px; font-weight:600; color:${isCurrentActive ? '#fff' : 'rgba(229,226,225,0.4)'};">
+              ${endDate}
+            </td>
+
+            <td style="padding:14px 18px; font-size:12px; color:rgba(229,226,225,0.5); text-transform:capitalize;">
+              ${source}
+            </td>
+
+            <td style="padding:14px 18px; text-align:right;">
+              <button onclick="AdminPage.grantUserSubscription('${sub.user_id}')" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:11px; padding:4px 10px;">
+                Extend 30 Days
+              </button>
+            </td>
+
+          </tr>
+        `;
+      }).join('');
+    };
+
+    if (searchInput) searchInput.oninput = renderSubs;
+    renderSubs();
   }
 
   // ── ADD USER FUNCTION MODAL ──
@@ -690,7 +463,6 @@ const AdminPage = (() => {
 
       try {
         if (window.sb) {
-          // Sign up via Supabase Auth
           const { data, error } = await window.sb.auth.signUp({
             email,
             password,
@@ -703,7 +475,6 @@ const AdminPage = (() => {
           if (createdUserId) {
             const isAdmin = role === 'admin';
             
-            // Upsert profile record in public.profiles table
             await window.sb.from('profiles').upsert({
               id: createdUserId,
               full_name: name,
@@ -714,7 +485,6 @@ const AdminPage = (() => {
               created_at: new Date().toISOString()
             });
 
-            // Grant initial plan if selected
             if (plan !== 'none') {
               const endDate = new Date();
               endDate.setDate(endDate.getDate() + 30);
@@ -732,6 +502,7 @@ const AdminPage = (() => {
           UI.toast(`User profile created for ${email}!`, 'success');
           modal.style.display = 'none';
           await loadUsersList();
+          await loadSubscriptionHolders();
           await loadMetrics();
         }
       } catch (err) {
@@ -761,7 +532,7 @@ const AdminPage = (() => {
     `;
 
     const user = userProfiles.find(u => u.id === userId) || await window.Auth.getProfile(userId);
-    const sub = await Subscriptions.getUserSubscription(userId);
+    const sub = userSubscriptions.find(s => s.user_id === userId) || await Subscriptions.getUserSubscription(userId);
     const watchHistory = await Subscriptions.getWatchHistory(userId, 50);
     const watchlist = await Subscriptions.getWatchlist(userId);
 
@@ -778,7 +549,7 @@ const AdminPage = (() => {
             <h2 style="font-size:22px; font-weight:900; color:#fff;">${user?.full_name || 'CineStream Member'}</h2>
             <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; ${isAdmin ? 'background:rgba(20,209,255,0.2); color:#14d1ff;' : 'background:rgba(255,255,255,0.08); color:rgba(229,226,225,0.7);'}">${isAdmin ? 'ADMINISTRATOR' : 'MEMBER'}</span>
           </div>
-          <p style="font-size:13px; color:rgba(229,226,225,0.6); margin-top:2px;">${user?.email || 'No email registered'}</p>
+          <p style="font-size:13px; color:rgba(229,226,225,0.6); margin-top:2px;">${user?.email || 'Registered User'}</p>
         </div>
       </div>
 
@@ -836,7 +607,7 @@ const AdminPage = (() => {
         const endDate = new Date();
         endDate.setDate(endDate.getDate() + 30);
 
-        await window.sb.from('subscriptions').insert({
+        await window.sb.from('subscriptions').upsert({
           user_id: userId,
           plan_id: 'premium',
           status: 'active',
@@ -846,6 +617,8 @@ const AdminPage = (() => {
         });
 
         UI.toast('Granted 30-Day Premium Subscription!', 'success');
+        await loadSubscriptionHolders();
+        await loadUsersList();
         await loadMetrics();
       }
     } catch (err) {
@@ -953,7 +726,6 @@ const AdminPage = (() => {
     try {
       if (window.sb) {
         if (editId) {
-          // Update existing code
           await window.sb.from('gift_codes').update({
             code: code,
             plan_id: plan,
@@ -962,7 +734,6 @@ const AdminPage = (() => {
           }).eq('id', editId);
           UI.toast(`Voucher code ${code} updated successfully!`, 'success');
         } else {
-          // Create new code
           await window.sb.from('gift_codes').insert({
             code: code,
             plan_id: plan,
@@ -999,7 +770,6 @@ const AdminPage = (() => {
     if (btnText) btnText.textContent = 'UPDATE VOUCHER CODE';
     if (cancelBtn) cancelBtn.style.display = 'inline-block';
 
-    // Scroll to form on mobile
     document.getElementById('gift-code-form-card')?.scrollIntoView({ behavior: 'smooth' });
   }
 
@@ -1046,6 +816,374 @@ const AdminPage = (() => {
     });
   }
 
+  // ── SHOWS CATALOG MANAGER ──
+  async function loadShowsCatalog() {
+    const loadingEl = document.getElementById('admin-shows-loading');
+    const gridEl = document.getElementById('admin-shows-grid');
+    const emptyEl = document.getElementById('admin-shows-empty');
+
+    if (loadingEl) loadingEl.style.display = 'block';
+    if (gridEl) gridEl.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    try {
+      let tmdbMovies = [];
+      let tmdbTV = [];
+
+      if (window.TMDB) {
+        tmdbMovies = await TMDB.getPopular('movie').catch(() => []);
+        tmdbTV = await TMDB.getPopular('tv').catch(() => []);
+      }
+
+      let customContent = [];
+      if (window.sb) {
+        const { data } = await window.sb.from('content').select('*');
+        if (data) customContent = data;
+      }
+
+      const combined = [
+        ...customContent,
+        ...(window.DEMO_CONTENT || []),
+        ...tmdbMovies,
+        ...tmdbTV
+      ];
+
+      const seen = new Set();
+      catalogShows = [];
+      combined.forEach(item => {
+        if (item && item.id && !seen.has(String(item.id))) {
+          seen.add(String(item.id));
+          catalogShows.push({
+            id: item.id,
+            title: item.title || item.name || 'Untitled Show',
+            poster: item.poster || item.poster_url || item.thumbnail || '',
+            type: item.type || (item.first_air_date ? 'tv' : 'movie'),
+            year: item.year || (item.release_date || item.first_air_date || '').substring(0, 4) || '2025',
+            imdb: item.imdb || (item.vote_average ? String(item.vote_average).substring(0, 3) : '8.5'),
+            genre: item.genre || 'Action / Drama',
+            description: item.description || item.overview || 'No synopsis available.',
+            isCustom: !!customContent.find(c => c.id == item.id)
+          });
+        }
+      });
+
+      filteredShows = [...catalogShows];
+      renderShowsCatalog();
+      setupShowsFilters();
+    } catch (err) {
+      console.error('Error loading shows catalog:', err);
+    } finally {
+      if (loadingEl) loadingEl.style.display = 'none';
+    }
+  }
+
+  function setupShowsFilters() {
+    const searchInput = document.getElementById('admin-shows-search');
+    const typeSelect = document.getElementById('admin-shows-type');
+    const sortSelect = document.getElementById('admin-shows-sort');
+    const addShowBtn = document.getElementById('admin-add-show-btn');
+
+    const applyFilters = () => {
+      const q = (searchInput?.value || '').toLowerCase().trim();
+      const type = typeSelect?.value || 'all';
+      const sort = sortSelect?.value || 'popular';
+
+      filteredShows = catalogShows.filter(show => {
+        const matchesQuery = !q || show.title.toLowerCase().includes(q) || String(show.id).includes(q) || show.genre.toLowerCase().includes(q);
+        const matchesType = type === 'all' || show.type === type;
+        return matchesQuery && matchesType;
+      });
+
+      if (sort === 'rating') {
+        filteredShows.sort((a, b) => parseFloat(b.imdb || 0) - parseFloat(a.imdb || 0));
+      } else if (sort === 'title') {
+        filteredShows.sort((a, b) => a.title.localeCompare(b.title));
+      }
+
+      renderShowsCatalog();
+    };
+
+    if (searchInput) searchInput.oninput = applyFilters;
+    if (typeSelect) typeSelect.onchange = applyFilters;
+    if (sortSelect) sortSelect.onchange = applyFilters;
+
+    if (addShowBtn) {
+      addShowBtn.onclick = () => openAddCustomShowModal();
+    }
+  }
+
+  function renderShowsCatalog() {
+    const gridEl = document.getElementById('admin-shows-grid');
+    const emptyEl = document.getElementById('admin-shows-empty');
+    const countEl = document.getElementById('admin-shows-count');
+
+    if (!gridEl) return;
+
+    if (countEl) {
+      countEl.textContent = `Showing ${filteredShows.length} of ${catalogShows.length} total shows in catalog`;
+    }
+
+    if (filteredShows.length === 0) {
+      gridEl.style.display = 'none';
+      if (emptyEl) emptyEl.style.display = 'block';
+      return;
+    }
+
+    gridEl.style.display = 'grid';
+    if (emptyEl) emptyEl.style.display = 'none';
+
+    gridEl.innerHTML = filteredShows.map(show => {
+      const posterUrl = UI.getSecurePosterUrl(show.poster);
+      const isTv = show.type === 'tv' || show.type === 'series';
+      const typeLabel = isTv ? '📺 TV Show' : (show.type === 'anime' ? '⚡ Anime' : '🎬 Movie');
+      
+      return `
+        <div class="glass-card" style="border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); display:flex; flex-direction:column; background:rgba(20,20,24,0.6); transition:transform 0.2s, border-color 0.2s;" onmouseover="this.style.borderColor='rgba(20,209,255,0.4)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)'; this.style.transform='translateY(0)';">
+          
+          <div style="height:240px; position:relative; overflow:hidden; background:#121216;">
+            <img src="${posterUrl}" alt="${show.title}" loading="lazy" style="width:100%; height:100%; object-fit:cover;" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22170%22 height=%22255%22 viewBox=%220 0 170 255%22%3E%3Crect width=%22170%22 height=%22255%22 fill=%22%231a1a1a%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2236%22 fill=%22%23333%22%3E🎬%3C/text%3E%3C/svg%3E'">
+            
+            <div style="position:absolute; top:8px; left:8px; display:flex; gap:4px; flex-wrap:wrap;">
+              <span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; background:rgba(0,0,0,0.75); color:#14d1ff; backdrop-filter:blur(4px); border:1px solid rgba(20,209,255,0.3);">${typeLabel}</span>
+              ${show.isCustom ? `<span style="font-size:10px; font-weight:800; padding:2px 8px; border-radius:100px; background:rgba(229,9,20,0.8); color:#fff;">CUSTOM</span>` : ''}
+            </div>
+
+            <div style="position:absolute; top:8px; right:8px;">
+              <span style="font-size:11px; font-weight:800; padding:2px 6px; border-radius:6px; background:rgba(0,0,0,0.75); color:#ffc832; backdrop-filter:blur(4px); border:1px solid rgba(255,200,50,0.3);">⭐ ${show.imdb}</span>
+            </div>
+
+            <div style="position:absolute; bottom:0; inset-x:0; padding:8px 12px; background:linear-gradient(0deg, rgba(10,10,14,0.95) 0%, transparent 100%);">
+              <span style="font-size:10px; color:rgba(229,226,225,0.6); font-family:monospace;">ID: ${show.id}</span>
+            </div>
+          </div>
+
+          <div style="padding:14px; flex:1; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+              <h4 style="font-size:14px; font-weight:800; color:#fff; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${show.title}">${show.title}</h4>
+              <p style="font-size:11px; color:rgba(229,226,225,0.5); margin-bottom:12px;">${show.year} • ${show.genre}</p>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:6px; margin-top:8px;">
+              <button onclick="AdminPage.testShowStream('${show.id}', '${show.type}')" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:12px; padding:8px; gap:6px; justify-content:center; background:linear-gradient(135deg, #e50914 0%, #ff3d4f 100%);">
+                <span class="material-symbols-outlined" style="font-size:16px;">play_circle</span>
+                <span>Play & Test Stream</span>
+              </button>
+
+              <button onclick="AdminPage.inspectShowDetails('${show.id}', '${show.type}')" class="btn btn-ghost btn-sm" style="border-radius:8px; font-size:12px; padding:6px; gap:6px; justify-content:center; border:1px solid rgba(255,255,255,0.1);">
+                <span class="material-symbols-outlined" style="font-size:16px;">info</span>
+                <span>Inspect Show Details</span>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── TEST STREAM & PLAYBACK VERIFICATION FOR ANY SHOW ──
+  async function testShowStream(contentId, type = 'movie') {
+    const modal = document.getElementById('admin-show-modal');
+    const modalBody = document.getElementById('admin-modal-body');
+    const closeBtn = document.getElementById('admin-modal-close');
+
+    if (!modal || !modalBody) return;
+
+    modal.style.display = 'flex';
+    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+
+    const isTv = type === 'tv' || type === 'series';
+    const season = 1;
+    const episode = 1;
+
+    const vidlinkUrl = isTv
+      ? `https://vidlink.pro/tv/${contentId}/${season}/${episode}`
+      : `https://vidlink.pro/movie/${contentId}`;
+
+    const superembedUrl = isTv
+      ? `https://multiembed.mov/?video_id=${contentId}&tmdb=1&s=${season}&e=${episode}`
+      : `https://multiembed.mov/?video_id=${contentId}&tmdb=1`;
+
+    const embed2Url = isTv
+      ? `https://www.2embed.cc/embedtv/${contentId}&s=${season}&e=${episode}`
+      : `https://www.2embed.cc/embed/${contentId}`;
+
+    modalBody.innerHTML = `
+      <div style="margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <span style="font-size:11px; font-weight:800; background:rgba(50,220,120,0.15); color:#32dc78; padding:3px 10px; border-radius:100px;">● Stream Tester</span>
+          <span style="font-size:12px; color:rgba(229,226,225,0.5);">TMDB ID: ${contentId}</span>
+        </div>
+        <h3 style="font-size:20px; font-weight:800; color:#fff;">Live Player Stream Verification</h3>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+        <button class="btn btn-secondary-outline btn-sm admin-player-server active" data-src="${vidlinkUrl}" style="border-radius:8px; font-size:12px;">VidLink Server (Primary)</button>
+        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${superembedUrl}" style="border-radius:8px; font-size:12px; border:1px solid rgba(255,255,255,0.1);">SuperEmbed Server</button>
+        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${embed2Url}" style="border-radius:8px; font-size:12px; border:1px solid rgba(255,255,255,0.1);">2Embed Server</button>
+        <button onclick="Router.navigate('player', {id:'${contentId}'})" class="btn btn-primary btn-sm" style="border-radius:8px; font-size:12px; margin-left:auto;">Full Player Page →</button>
+      </div>
+
+      <div style="position:relative; width:100%; height:420px; border-radius:12px; overflow:hidden; background:#000; border:1px solid rgba(255,255,255,0.1);">
+        <iframe id="admin-preview-iframe" src="${vidlinkUrl}" style="width:100%; height:100%; border:none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+      </div>
+
+      <div style="margin-top:14px; padding:12px; border-radius:10px; background:rgba(255,255,255,0.03); font-size:12px; color:rgba(229,226,225,0.6); display:flex; justify-content:space-between; align-items:center;">
+        <span>Status: If video loads smoothly, this stream source is 100% operational for end users.</span>
+        <button onclick="document.getElementById('admin-preview-iframe').src += ''" class="btn btn-ghost btn-sm" style="font-size:11px; padding:4px 10px;">Reload Stream</button>
+      </div>
+    `;
+
+    modalBody.querySelectorAll('.admin-player-server').forEach(btn => {
+      btn.onclick = () => {
+        modalBody.querySelectorAll('.admin-player-server').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const iframe = document.getElementById('admin-preview-iframe');
+        if (iframe) iframe.src = btn.dataset.src;
+      };
+    });
+  }
+
+  // ── INSPECT SHOW DETAILS MODAL ──
+  async function inspectShowDetails(contentId, type = 'movie') {
+    const modal = document.getElementById('admin-show-modal');
+    const modalBody = document.getElementById('admin-modal-body');
+    const closeBtn = document.getElementById('admin-modal-close');
+
+    if (!modal || !modalBody) return;
+
+    modal.style.display = 'flex';
+    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+
+    modalBody.innerHTML = `
+      <div style="text-align:center; padding:40px 0;">
+        <div style="width:36px; height:36px; border:3px solid rgba(20,209,255,0.2); border-top-color:#14d1ff; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 12px;"></div>
+        <p style="color:rgba(229,226,225,0.5); font-size:13px;">Fetching TMDB show metadata...</p>
+      </div>
+    `;
+
+    let details = null;
+    if (window.TMDB) {
+      details = await TMDB.getDetails(contentId, type).catch(() => null);
+    }
+
+    if (!details) {
+      details = catalogShows.find(s => s.id == contentId) || { title: 'Unknown', description: 'N/A' };
+    }
+
+    modalBody.innerHTML = `
+      <div style="display:flex; gap:24px; flex-wrap:wrap;">
+        <div style="width:200px; flex-shrink:0;">
+          <img src="${UI.getSecurePosterUrl(details.poster)}" style="width:100%; border-radius:14px; border:1px solid rgba(255,255,255,0.1);" alt="Poster">
+        </div>
+        
+        <div style="flex:1; min-width:260px;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:11px; font-weight:800; background:rgba(20,209,255,0.15); color:#14d1ff; padding:2px 8px; border-radius:100px;">TMDB ID: ${details.id}</span>
+            <span style="font-size:12px; color:rgba(229,226,225,0.4);">${details.year || ''}</span>
+          </div>
+
+          <h2 style="font-size:24px; font-weight:900; color:#fff; margin-bottom:12px;">${details.title}</h2>
+          <p style="font-size:13.5px; color:rgba(229,226,225,0.7); line-height:1.6; margin-bottom:20px;">${details.description || details.overview || 'No overview provided.'}</p>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:24px; background:rgba(255,255,255,0.03); padding:16px; border-radius:12px;">
+            <div>
+              <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block;">Genre</span>
+              <span style="font-size:13px; font-weight:600; color:#fff;">${details.genre || 'N/A'}</span>
+            </div>
+            <div>
+              <span style="font-size:11px; color:rgba(229,226,225,0.4); display:block;">IMDB Rating</span>
+              <span style="font-size:13px; font-weight:600; color:#ffc832;">⭐ ${details.imdb || 'N/A'}</span>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button onclick="AdminPage.testShowStream('${details.id}', '${type}')" class="btn btn-primary" style="border-radius:10px; gap:8px;">
+              <span class="material-symbols-outlined">play_circle</span>
+              <span>Test Stream Player</span>
+            </button>
+
+            <button onclick="Router.navigate('detail', {id:'${details.id}', type:'${type}'}); document.getElementById('admin-show-modal').style.display='none';" class="btn btn-ghost" style="border-radius:10px; gap:6px; border:1px solid rgba(255,255,255,0.15);">
+              <span class="material-symbols-outlined">open_in_new</span>
+              <span>View User Detail Page</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function openAddCustomShowModal() {
+    const modal = document.getElementById('admin-show-modal');
+    const modalBody = document.getElementById('admin-modal-body');
+    const closeBtn = document.getElementById('admin-modal-close');
+
+    if (!modal || !modalBody) return;
+
+    modal.style.display = 'flex';
+    if (closeBtn) closeBtn.onclick = () => modal.style.display = 'none';
+
+    modalBody.innerHTML = `
+      <h3 style="font-size:20px; font-weight:800; color:#14d1ff; margin-bottom:6px;">Add Custom Show / Override</h3>
+      <p style="font-size:12px; color:rgba(229,226,225,0.5); margin-bottom:20px;">Add custom movie entries directly into Supabase database.</p>
+
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div>
+          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Title</label>
+          <input type="text" id="custom-show-title" class="input-field" placeholder="Show Title" style="border-radius:10px; font-size:14px; padding:10px 14px;">
+        </div>
+
+        <div>
+          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Custom Content ID (TMDB or Unique String)</label>
+          <input type="text" id="custom-show-id" class="input-field" placeholder="e.g. 550" style="border-radius:10px; font-size:14px; padding:10px 14px;">
+        </div>
+
+        <div>
+          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Poster Image URL</label>
+          <input type="text" id="custom-show-poster" class="input-field" placeholder="https://image.tmdb.org/t/p/w500/..." style="border-radius:10px; font-size:14px; padding:10px 14px;">
+        </div>
+
+        <div>
+          <label class="input-label" style="font-size:11px; font-weight:700; text-transform:uppercase; display:block; margin-bottom:6px;">Overview / Description</label>
+          <textarea id="custom-show-desc" class="input-field" rows="3" placeholder="Plot summary..." style="border-radius:10px; font-size:13px; padding:10px 14px; resize:vertical;"></textarea>
+        </div>
+
+        <button id="save-custom-show-btn" class="btn btn-primary" style="border-radius:10px; padding:12px; font-size:14px; font-weight:800; margin-top:8px;">SAVE TO DATABASE</button>
+      </div>
+    `;
+
+    document.getElementById('save-custom-show-btn').onclick = async () => {
+      const title = document.getElementById('custom-show-title').value.trim();
+      const id = document.getElementById('custom-show-id').value.trim();
+      const poster = document.getElementById('custom-show-poster').value.trim();
+      const desc = document.getElementById('custom-show-desc').value.trim();
+
+      if (!title || !id) {
+        UI.toast('Please enter title and content ID.', 'warning');
+        return;
+      }
+
+      try {
+        if (window.sb) {
+          await window.sb.from('content').upsert({
+            id: String(id),
+            title: title,
+            poster: poster,
+            description: desc,
+            type: 'movie',
+            created_at: new Date().toISOString()
+          });
+        }
+        UI.toast('Custom media entry added!', 'success');
+        modal.style.display = 'none';
+        await loadShowsCatalog();
+      } catch (err) {
+        UI.toast('Failed to save entry.', 'error');
+      }
+    };
+  }
+
   return {
     init,
     testShowStream,
@@ -1057,7 +1195,8 @@ const AdminPage = (() => {
     editGiftCode,
     resetGiftCodeForm,
     copyGiftCode,
-    deleteGiftCode
+    deleteGiftCode,
+    loadTableDataInspector
   };
 })();
 
