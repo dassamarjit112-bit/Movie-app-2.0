@@ -214,6 +214,64 @@ const AccountPage = (() => {
     await loadWatchHistory(userId);
   }
 
+  async function initAdminPanel(userId) {
+    try {
+      // Fetch user profile from Supabase to check admin status
+      const { data: profile, error } = await window.sb
+        .from('profiles')
+        .select('admin')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.warn('Failed to check admin status:', error);
+        return;
+      }
+
+      // Show admin panel button only if user is admin
+      const adminBtn = document.getElementById('admin-panel-btn');
+      if (adminBtn && profile?.admin === true) {
+        adminBtn.style.display = 'flex';
+
+        // Bind click handler to navigate to admin panel
+        adminBtn.onclick = () => {
+          Router.navigate('admin');
+        };
+
+        // Add hover effects
+        adminBtn.addEventListener('mouseenter', () => {
+          adminBtn.style.background = 'rgba(20,209,255,0.08)';
+          adminBtn.style.borderColor = 'rgba(20,209,255,0.4)';
+          adminBtn.style.transform = 'translateX(4px)';
+          adminBtn.style.boxShadow = '0 4px 12px rgba(20,209,255,0.15)';
+          const icon = adminBtn.querySelector('.material-symbols-outlined');
+          if (icon) icon.style.transform = 'rotate(-15deg) scale(1.1)';
+        });
+
+        adminBtn.addEventListener('mouseleave', () => {
+          adminBtn.style.background = 'none';
+          adminBtn.style.borderColor = 'rgba(20,209,255,0.2)';
+          adminBtn.style.transform = 'translateX(0)';
+          adminBtn.style.boxShadow = 'none';
+          const icon = adminBtn.querySelector('.material-symbols-outlined');
+          if (icon) icon.style.transform = 'rotate(0) scale(1)';
+        });
+
+        adminBtn.addEventListener('mousedown', () => {
+          adminBtn.style.transform = 'translateX(2px) scale(0.98)';
+        });
+
+        adminBtn.addEventListener('mouseup', () => {
+          adminBtn.style.transform = 'translateX(4px)';
+        });
+
+        UI.toast('Admin panel unlocked!', 'info');
+      }
+    } catch (err) {
+      console.error('Error initializing admin panel:', err);
+    }
+  }
+
   function setupTabs(userId) {
     const desktopNavButtons = document.querySelectorAll('.account-nav-btn');
     const mobileNavButtons = document.querySelectorAll('.mobile-tab-btn');

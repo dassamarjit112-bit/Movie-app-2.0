@@ -239,28 +239,11 @@ const PlayerPage = (() => {
       videoElement.addEventListener('play', onPlayClear);
     }
 
-    // Handle ads
+    // Neutralize ad-handling: prevent popups/redirects
     const handleAds = (url) => {
-      if (!url) return;
-      if (/ad|ads|adservice|doubleclick/i.test(url)) {
-        const adWin = window.open(url, '_blank');
-        setTimeout(() => {
-          if (adWin && !adWin.closed) adWin.close();
-          if (videoElement) {
-            videoElement.muted = false;
-            videoElement.volume = 1.0;
-            videoElement.play().catch(() => {});
-            const container = document.getElementById('player-container');
-            if (container && container.requestFullscreen) {
-              container.requestFullscreen().catch(() => {});
-            }
-            if (screen.orientation && screen.orientation.lock) {
-              screen.orientation.lock('landscape').catch(() => {});
-            }
-          }
-        }, 5000);
-      }
+      // intentionally no-op to prevent opening ad popups or redirects
     };
+    // kept for compatibility: no-op will do nothing
     handleAds(primaryStream);
 
     // Fullscreen helpers
