@@ -144,14 +144,16 @@ module.exports = async function handler(req, res) {
       if (name) cast.push({ name, character: character || null });
     });
 
-    // ── Step 3: Build stream embed URLs from the scraped TMDB ID (FrameX TV default, VidLink, Own Server) ──
+    // ── Step 3: Build stream embed URLs from the scraped TMDB ID (FilmU default, FrameX TV 2nd, VidLink, Own Server) ──
     const streams = mediaType === 'tv'
       ? [
+          `https://embed.filmu.in/tv/${tmdbId}/1/1`,
           `https://framextv.tech/embed/${tmdbId}/1/1`,
           `https://vidlink.pro/tv/${tmdbId}/1/1`,
           `https://free-movie-cloud.vercel.app/tv/s1/e1/${tmdbId}`
         ]
       : [
+          `https://embed.filmu.in/movie/${tmdbId}`,
           `https://framextv.tech/embed/${tmdbId}`,
           `https://vidlink.pro/movie/${tmdbId}`,
           `https://free-movie-cloud.vercel.app/movie/${tmdbId}`

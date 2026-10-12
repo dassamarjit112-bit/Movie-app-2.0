@@ -37,14 +37,22 @@ app.use((req, res, next) => {
 // ──────────────────────────────────────────────────────────────
 const STREAM_SERVERS = {
   movie: {
+    filmu: (id) => `https://embed.filmu.in/movie/${id}`,
     framextv: (id) => `https://framextv.tech/embed/${id}`,
     vidlink: (id) => `https://vidlink.pro/movie/${id}`,
     ownserver: (id) => `https://free-movie-cloud.vercel.app/movie/${id}`,
   },
   tv: {
+    filmu: (id, s, e) => `https://embed.filmu.in/tv/${id}/${s}/${e}`,
     framextv: (id, s, e) => `https://framextv.tech/embed/${id}/${s}/${e}`,
     vidlink: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`,
     ownserver: (id, s, e) => `https://free-movie-cloud.vercel.app/tv/s${s}/e${e}/${id}`,
+  },
+  anime: {
+    filmu: (id, s, e) => `https://embed.filmu.in/anime/${id}/${s || 1}/${e || 1}`,
+    framextv: (id, s, e) => `https://framextv.tech/embed/${id}/${s || 1}/${e || 1}`,
+    vidlink: (id, s, e) => `https://vidlink.pro/tv/${id}/${s || 1}/${e || 1}`,
+    ownserver: (id, s, e) => `https://free-movie-cloud.vercel.app/tv/s${s || 1}/e${e || 1}/${id}`,
   }
 };
 

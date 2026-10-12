@@ -53,21 +53,31 @@ const TMDB = (() => {
     53: 'Thriller', 10752: 'War', 37: 'Western'
   };
 
-  // ── STREAMING SERVERS (3 Servers Only: FrameX TV (Default), VidLink, Own Server) ──
+  // ── STREAMING SERVERS (FilmU (Default), FrameX TV (2nd), VidLink, Own Server) ──
   const INDIAN_SERVERS = [
+    { name: 'FilmU',     url: (id) => `https://embed.filmu.in/movie/${id}` },
     { name: 'FrameX TV', url: (id) => `https://framextv.tech/embed/${id}` },
     { name: 'VidLink',   url: (id) => `https://vidlink.pro/movie/${id}` },
     { name: 'Own Server',url: (id) => `https://free-movie-cloud.vercel.app/movie/${id}` },
   ];
 
   const INDIAN_TV_SERVERS = [
+    { name: 'FilmU',     url: (id, s, e) => `https://embed.filmu.in/tv/${id}/${s}/${e}` },
     { name: 'FrameX TV', url: (id, s, e) => `https://framextv.tech/embed/${id}/${s}/${e}` },
     { name: 'VidLink',   url: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` },
     { name: 'Own Server',url: (id, s, e) => `https://free-movie-cloud.vercel.app/tv/s${s}/e${e}/${id}` },
   ];
+
+  const INDIAN_ANIME_SERVERS = [
+    { name: 'FilmU',     url: (id, s, e) => `https://embed.filmu.in/anime/${id}/${s || 1}/${e || 1}` },
+    { name: 'FrameX TV', url: (id, s, e) => `https://framextv.tech/embed/${id}/${s || 1}/${e || 1}` },
+    { name: 'VidLink',   url: (id, s, e) => `https://vidlink.pro/tv/${id}/${s || 1}/${e || 1}` },
+    { name: 'Own Server',url: (id, s, e) => `https://free-movie-cloud.vercel.app/tv/s${s || 1}/e${e || 1}/${id}` },
+  ];
   
   function _buildMovieStreams(tmdbId, imdbId) {
     return [
+      `https://embed.filmu.in/movie/${tmdbId}`,
       `https://framextv.tech/embed/${tmdbId}`,
       `https://vidlink.pro/movie/${tmdbId}`,
       `https://free-movie-cloud.vercel.app/movie/${tmdbId}`,
@@ -76,9 +86,19 @@ const TMDB = (() => {
 
   function _buildTVStreams(tmdbId, imdbId, season = 1, episode = 1) {
     return [
+      `https://embed.filmu.in/tv/${tmdbId}/${season}/${episode}`,
       `https://framextv.tech/embed/${tmdbId}/${season}/${episode}`,
       `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`,
       `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${tmdbId}`,
+    ];
+  }
+
+  function _buildAnimeStreams(anilistId, season = 1, episode = 1) {
+    return [
+      `https://embed.filmu.in/anime/${anilistId}/${season}/${episode}`,
+      `https://framextv.tech/embed/${anilistId}/${season}/${episode}`,
+      `https://vidlink.pro/tv/${anilistId}/${season}/${episode}`,
+      `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${anilistId}`,
     ];
   }
 
@@ -116,13 +136,28 @@ const TMDB = (() => {
     };
   }
   
-  // Get ALL embed stream URLs for any TMDB title (3 servers only)
-  function getRegionalStreams(itemOrId, season, episode) {
-    const id = (typeof itemOrId === 'object') ? itemOrId.tmdb_id || itemOrId.id : itemOrId;
+  // Get ALL embed stream URLs for any TMDB/Anime title
+  function getRegionalStreams(itemOrId, season, episode, mediaType) {
+    const isObj = typeof itemOrId === 'object' && itemOrId !== null;
+    const id = isObj ? (itemOrId.tmdb_id || itemOrId.id) : itemOrId;
+    const anilistId = isObj ? (itemOrId.anilist_id || itemOrId.anilistId || id) : id;
+    const isAnime = mediaType === 'anime' || (isObj && (itemOrId.type === 'anime' || itemOrId.anilist_id));
+
+    if (isAnime) {
+      const s = season || 1;
+      const e = episode || 1;
+      return [
+        `https://embed.filmu.in/anime/${anilistId}/${s}/${e}`,
+        `https://framextv.tech/embed/${id}/${s}/${e}`,
+        `https://vidlink.pro/tv/${id}/${s}/${e}`,
+        `https://free-movie-cloud.vercel.app/tv/s${s}/e${e}/${id}`,
+      ];
+    }
 
     if (season != null && episode != null) {
       // TV Series
       return [
+        `https://embed.filmu.in/tv/${id}/${season}/${episode}`,
         `https://framextv.tech/embed/${id}/${season}/${episode}`,
         `https://vidlink.pro/tv/${id}/${season}/${episode}`,
         `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${id}`,
@@ -130,6 +165,7 @@ const TMDB = (() => {
     } else {
       // Movies
       return [
+        `https://embed.filmu.in/movie/${id}`,
         `https://framextv.tech/embed/${id}`,
         `https://vidlink.pro/movie/${id}`,
         `https://free-movie-cloud.vercel.app/movie/${id}`,
@@ -330,10 +366,11 @@ const TMDB = (() => {
       const item = normalize(raw, type);
       item.imdb_id = raw.external_ids ? raw.external_ids.imdb_id : null;
 
-      // Rebuild streams for movie (3 servers only)
+      // Rebuild streams for movie (FilmU default, FrameX TV 2nd)
       const tid = item.tmdb_id || item.id;
       if (type === 'movie') {
         item.streams = [
+          `https://embed.filmu.in/movie/${tid}`,
           `https://framextv.tech/embed/${tid}`,
           `https://vidlink.pro/movie/${tid}`,
           `https://free-movie-cloud.vercel.app/movie/${tid}`,
@@ -381,6 +418,7 @@ const TMDB = (() => {
                 const sn = seasonNum;
                 const en = ep.episode_number;
                 const epStreams = [
+                  `https://embed.filmu.in/tv/${tmdbId}/${sn}/${en}`,
                   `https://framextv.tech/embed/${tmdbId}/${sn}/${en}`,
                   `https://vidlink.pro/tv/${tmdbId}/${sn}/${en}`,
                   `https://free-movie-cloud.vercel.app/tv/s${sn}/e${en}/${tmdbId}`,
@@ -455,7 +493,8 @@ const TMDB = (() => {
     // Expose server list for UI
     getServerList: () => ({
       movie: INDIAN_SERVERS,
-      tv: INDIAN_TV_SERVERS
+      tv: INDIAN_TV_SERVERS,
+      anime: INDIAN_ANIME_SERVERS
     })
   };
 })();

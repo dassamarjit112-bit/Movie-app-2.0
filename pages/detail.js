@@ -87,7 +87,9 @@ const DetailPage = (() => {
     const playBtn = document.getElementById('detail-play-btn');
     if (playBtn) {
       playBtn.onclick = () => {
-        if (isSeries(item.type)) {
+        if (item.type === 'anime' || contentType === 'anime') {
+          Router.navigate('player', { id: item.id, type: 'anime', anilist_id: item.anilist_id, season: 1, episode: 1 });
+        } else if (isSeries(item.type)) {
           Router.navigate('player', { id: item.id, type: 'series', season: 1, episode: 1 });
         } else {
           Router.navigate('player', { id: item.id, type: 'movie' });
@@ -262,8 +264,9 @@ function setupEpisodes(item) {
         list.innerHTML = `<div style="color:rgba(255,255,255,0.6); padding:16px;">No episodes available for this season.</div>`;
         return;
       }
+      const targetPlayerType = (item.type === 'anime' || contentType === 'anime') ? 'anime' : 'series';
       list.innerHTML = episodes.map(ep => `
-        <div class="glass-card" style="display:flex; gap:20px; padding:16px; border-radius:12px; align-items:center; cursor:pointer;" onclick="Router.navigate('player', {id:'${item.id}', type:'series', season:${seasonNum}, episode:${ep.epNum}})">
+        <div class="glass-card" style="display:flex; gap:20px; padding:16px; border-radius:12px; align-items:center; cursor:pointer;" onclick="Router.navigate('player', {id:'${item.id}', type:'${targetPlayerType}', anilist_id:'${item.anilist_id || ''}', season:${seasonNum}, episode:${ep.epNum}})">
           <div style="position:relative; width:160px; aspect-ratio:16/9; border-radius:6px; overflow:hidden; flex-shrink:0;">
             <img src="${ep.thumb}" alt="Episode Thumbnail" style="width:100%; height:100%; object-fit:cover;">
             <div style="position:absolute; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center;">

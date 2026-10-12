@@ -15,6 +15,28 @@ Thumbs.db
 .gemini/
 .git/
 
+# AI Agent Skills & Tooling
+.agent/
+.agents/
+.augment/
+.claude/
+.codebuddy/
+.codewhale/
+.continue/
+.cursor/
+.factory/
+.github/prompts/
+.kilocode/
+.kiro/
+.opencode/
+.qoder/
+.roo/
+.trae/
+.warp/
+.windsurf/
+skills/
+design-system/
+
 # Node dependencies
 node_modules/
 dist/

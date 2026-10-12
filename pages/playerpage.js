@@ -44,7 +44,7 @@ const PlayerPage = (() => {
     let item = null;
     try {
       if (window.TMDB) {
-        const tmdbType = contentType === 'series' ? 'tv' : 'movie';
+        const tmdbType = (contentType === 'series' || contentType === 'anime') ? 'tv' : 'movie';
         item = await TMDB.getDetails(contentId, tmdbType);
       }
     } catch (err) {
@@ -52,7 +52,7 @@ const PlayerPage = (() => {
     }
     if (!item && window.TMDB) {
       try {
-        const altType = contentType === 'series' ? 'movie' : 'tv';
+        const altType = (contentType === 'series' || contentType === 'anime') ? 'movie' : 'tv';
         item = await TMDB.getDetails(contentId, altType);
       } catch (err) {}
     }
@@ -60,6 +60,9 @@ const PlayerPage = (() => {
       UI.toast('Content not found. Please try again.', 'error');
       Router.navigate('home');
       return;
+    }
+    if (params.anilist_id) {
+      item.anilist_id = params.anilist_id;
     }
 
     // Set title and subtitle
@@ -70,7 +73,7 @@ const PlayerPage = (() => {
 
     // Resolve episode info from params
     let season = 1, episode = 1;
-    if (contentType === 'series') {
+    if (contentType === 'series' || contentType === 'anime') {
       if (params.ep) {
         const epMatch = params.ep.match(/S(\d+)\s*E(\d+)/i);
         if (epMatch) {
@@ -84,7 +87,7 @@ const PlayerPage = (() => {
     }
 
     if (subtitleEl) {
-      subtitleEl.textContent = contentType === 'series'
+      subtitleEl.textContent = (contentType === 'series' || contentType === 'anime')
         ? `Season ${season} · Episode ${episode}`
         : `Movie · ${item.genre || ''}`;
     }
@@ -95,10 +98,12 @@ const PlayerPage = (() => {
     // Fetch embed streams
     let embedStreams = [];
     try {
-      if (contentType === 'series') {
-        embedStreams = await TMDB.getRegionalStreams(item, season, episode);
+      if (contentType === 'anime') {
+        embedStreams = await TMDB.getRegionalStreams(item, season, episode, 'anime');
+      } else if (contentType === 'series') {
+        embedStreams = await TMDB.getRegionalStreams(item, season, episode, 'tv');
       } else {
-        embedStreams = await TMDB.getRegionalStreams(item, null, null);
+        embedStreams = await TMDB.getRegionalStreams(item, null, null, 'movie');
       }
     } catch (e) {
       console.warn('Could not fetch embed streams:', e);
@@ -107,14 +112,24 @@ const PlayerPage = (() => {
     // Fallback if TMDB module didn't return streams
     if (!embedStreams || embedStreams.length === 0) {
       const tmdbId = item.tmdb_id || item.id;
-      if (contentType === 'series') {
+      const anilistId = item.anilist_id || item.anilistId || tmdbId;
+      if (contentType === 'anime' || item.type === 'anime') {
         embedStreams = [
+          `https://embed.filmu.in/anime/${anilistId}/${season}/${episode}`,
+          `https://framextv.tech/embed/${tmdbId}/${season}/${episode}`,
+          `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`,
+          `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${tmdbId}`
+        ];
+      } else if (contentType === 'series') {
+        embedStreams = [
+          `https://embed.filmu.in/tv/${tmdbId}/${season}/${episode}`,
           `https://framextv.tech/embed/${tmdbId}/${season}/${episode}`,
           `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`,
           `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${tmdbId}`
         ];
       } else {
         embedStreams = [
+          `https://embed.filmu.in/movie/${tmdbId}`,
           `https://framextv.tech/embed/${tmdbId}`,
           `https://vidlink.pro/movie/${tmdbId}`,
           `https://free-movie-cloud.vercel.app/movie/${tmdbId}`
@@ -356,6 +371,25 @@ const PlayerPage = (() => {
     setupOverlayAutoHide();
   }
 
+  function buildFilmuUrl(contentType, item, season, episode) {
+    try {
+      const tmdbId = (typeof item === 'object') ? (item.tmdb_id || item.id) : item;
+      const anilistId = (typeof item === 'object') ? (item.anilist_id || item.anilistId || tmdbId) : tmdbId;
+      const s = season || 1;
+      const e = episode || 1;
+      if (contentType === 'anime' || (typeof item === 'object' && item.type === 'anime')) {
+        return `https://embed.filmu.in/anime/${anilistId}/${s}/${e}`;
+      } else if (contentType === 'series' || (typeof item === 'object' && (item.type === 'series' || item.type === 'tv'))) {
+        return `https://embed.filmu.in/tv/${tmdbId}/${s}/${e}`;
+      } else {
+        return `https://embed.filmu.in/movie/${tmdbId}`;
+      }
+    } catch (e) {
+      console.warn('Failed to build FilmU URL:', e);
+      return null;
+    }
+  }
+
   function buildFramexUrl(contentType, item, season, episode) {
     try {
       const tmdbId = (typeof item === 'object') ? (item.tmdb_id || item.id) : item;
@@ -373,6 +407,7 @@ const PlayerPage = (() => {
   }
 
   const SERVER_NAMES = [
+    'FilmU',
     'FrameX TV',
     'VidLink',
     'Own Server'
@@ -387,7 +422,7 @@ const PlayerPage = (() => {
     const nextIdx = (activeStreamIndex + 1) % availableStreams.length;
     if (nextIdx === 0) {
       // We've tried all servers, go back to first
-      UI.toast('All servers tried. Reverting to Server 1 (FrameX TV).', 'info');
+      UI.toast('All servers tried. Reverting to Server 1 (FilmU).', 'info');
     }
     switchServer(nextIdx);
     failCount = 0;
