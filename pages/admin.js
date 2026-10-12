@@ -1158,17 +1158,17 @@ const AdminPage = (() => {
     const season = 1;
     const episode = 1;
 
+    const framexUrl = isTv
+      ? `https://framextv.tech/embed/${contentId}/${season}/${episode}`
+      : `https://framextv.tech/embed/${contentId}`;
+
     const vidlinkUrl = isTv
       ? `https://vidlink.pro/tv/${contentId}/${season}/${episode}`
       : `https://vidlink.pro/movie/${contentId}`;
 
-    const superembedUrl = isTv
-      ? `https://multiembed.mov/?video_id=${contentId}&tmdb=1&s=${season}&e=${episode}`
-      : `https://multiembed.mov/?video_id=${contentId}&tmdb=1`;
-
-    const embed2Url = isTv
-      ? `https://www.2embed.cc/embedtv/${contentId}&s=${season}&e=${episode}`
-      : `https://www.2embed.cc/embed/${contentId}`;
+    const ownServerUrl = isTv
+      ? `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${contentId}`
+      : `https://free-movie-cloud.vercel.app/movie/${contentId}`;
 
     modalBody.innerHTML = `
       <div style="margin-bottom:20px;">
@@ -1180,14 +1180,14 @@ const AdminPage = (() => {
       </div>
 
       <div style="display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap;">
-        <button class="btn btn-secondary-outline btn-sm admin-player-server active" data-src="${vidlinkUrl}" style="border-radius:10px; font-size:13px; font-weight:700;">VidLink Server (Primary)</button>
-        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${superembedUrl}" style="border-radius:10px; font-size:13px; border:1px solid rgba(255,255,255,0.15); font-weight:700;">SuperEmbed Server</button>
-        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${embed2Url}" style="border-radius:10px; font-size:13px; border:1px solid rgba(255,255,255,0.15); font-weight:700;">2Embed Server</button>
+        <button class="btn btn-secondary-outline btn-sm admin-player-server active" data-src="${framexUrl}" style="border-radius:10px; font-size:13px; font-weight:700;">FrameX TV (Default)</button>
+        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${vidlinkUrl}" style="border-radius:10px; font-size:13px; border:1px solid rgba(255,255,255,0.15); font-weight:700;">VidLink Server</button>
+        <button class="btn btn-ghost btn-sm admin-player-server" data-src="${ownServerUrl}" style="border-radius:10px; font-size:13px; border:1px solid rgba(255,255,255,0.15); font-weight:700;">Own Server</button>
         <button onclick="Router.navigate('player', {id:'${contentId}'})" class="btn btn-primary btn-sm" style="border-radius:10px; font-size:13px; margin-left:auto; font-weight:800;">Full Player Page →</button>
       </div>
 
       <div style="position:relative; width:100%; height:460px; border-radius:16px; overflow:hidden; background:#000; border:1px solid rgba(255,255,255,0.12);">
-        <iframe id="admin-preview-iframe" src="${vidlinkUrl}" style="width:100%; height:100%; border:none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+        <iframe id="admin-preview-iframe" src="${framexUrl}" style="width:100%; height:100%; border:none;" allowfullscreen allow="autoplay; encrypted-media"></iframe>
       </div>
 
       <div style="margin-top:16px; padding:14px 18px; border-radius:12px; background:rgba(255,255,255,0.04); font-size:13px; color:rgba(229,226,225,0.7); display:flex; justify-content:space-between; align-items:center;">

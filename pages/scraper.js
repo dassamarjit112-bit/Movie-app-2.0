@@ -143,7 +143,7 @@ const ScraperPage = (() => {
     // Stream server buttons
     const streamsEl = document.getElementById('scraper-streams');
     if (streamsEl && data.streams?.length) {
-      const serverNames = ['2Embed', 'VidLink', 'AutoEmbed'];
+      const serverNames = ['FrameX TV', 'VidLink', 'Own Server'];
       streamsEl.innerHTML = data.streams.map((url, i) => `
         <button class="scraper-stream-btn ${i === 0 ? 'active' : ''}" data-index="${i}" title="${url}">
           <span class="material-symbols-outlined" style="font-size:16px;">dns</span>

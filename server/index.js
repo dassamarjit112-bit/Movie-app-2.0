@@ -37,38 +37,14 @@ app.use((req, res, next) => {
 // ──────────────────────────────────────────────────────────────
 const STREAM_SERVERS = {
   movie: {
-    // Primary embed servers (highest reliability in India)
-    vidsrc_to: (id) => `https://vidsrc.to/embed/movie/${id}`,
-    vidsrc_me: (id) => `https://vidsrc.me/embed/movie?tmdb=${id}`,
-    embed_su: (id) => `https://embed.su/embed/movie/${id}`,
-    embed2: (id) => `https://www.2embed.cc/embed/${id}`,
+    framextv: (id) => `https://framextv.tech/embed/${id}`,
     vidlink: (id) => `https://vidlink.pro/movie/${id}`,
-    autoembed: (id) => `https://autoembed.co/movie/tmdb/${id}`,
-    multiembed: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1`,
-    moviesapi: (id) => `https://moviesapi.club/movie/${id}`,
-    vidsrc_icu: (id) => `https://vidsrc.icu/embed/movie/${id}`,
-    superembed: (id) => `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
-    // Indian-friendly servers for Bollywood & regional content
-    hindimovies: (id) => `https://hindimovies.to/embed/movie/${id}`,
-    dbgo: (id) => `https://dbgo.fun/embed/movie/${id}`,
-    flix555: (id) => `https://flix555.com/movie/${id}`,
-    streamimdb: (id) => `https://streamimdb.ru/embed/movie/${id}`,
-    // Old movies & classics servers
-    clasicos: (id) => `https://clasicos.netlify.app/embed/movie/${id}`,
-    moviesapi_club: (id) => `https://moviesapi.club/movie/${id}`,
+    ownserver: (id) => `https://free-movie-cloud.vercel.app/movie/${id}`,
   },
   tv: {
-    vidsrc_to: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}`,
-    vidsrc_me: (id, s, e) => `https://vidsrc.me/embed/tv?tmdb=${id}&season=${s}&episode=${e}`,
-    embed_su: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}`,
-    embed2: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`,
+    framextv: (id, s, e) => `https://framextv.tech/embed/${id}/${s}/${e}`,
     vidlink: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}`,
-    autoembed: (id, s, e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}`,
-    moviesapi: (id, s, e) => `https://moviesapi.club/tv/${id}-${s}-${e}`,
-    multiembed: (id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${s}&e=${e}`,
-    vidsrc_icu: (id, s, e) => `https://vidsrc.icu/embed/tv/${id}/${s}/${e}`,
-    streamimdb: (id, s, e, imdbId) => `https://streamimdb.ru/embed/tv/${imdbId || id}/${s}/${e}`,
-    dbgo: (id, s, e) => `https://dbgo.fun/embed/tv/${id}/${s}/${e}`,
+    ownserver: (id, s, e) => `https://free-movie-cloud.vercel.app/tv/s${s}/e${e}/${id}`,
   }
 };
 

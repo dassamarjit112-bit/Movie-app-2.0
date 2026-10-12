@@ -1,5 +1,5 @@
 // Server URL constants for movie streaming app
-export const PRIMARY_SERVER_URL = "https://2embed.cc";
+export const PRIMARY_SERVER_URL = "https://framextv.tech";
 export const FALLBACK_SERVERS = [
   "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
   "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8",

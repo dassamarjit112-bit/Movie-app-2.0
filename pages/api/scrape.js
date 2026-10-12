@@ -144,19 +144,17 @@ module.exports = async function handler(req, res) {
       if (name) cast.push({ name, character: character || null });
     });
 
-    // ── Step 3: Build stream embed URLs from the scraped TMDB ID ──
+    // ── Step 3: Build stream embed URLs from the scraped TMDB ID (FrameX TV default, VidLink, Own Server) ──
     const streams = mediaType === 'tv'
       ? [
-          `https://www.2embed.cc/embedtv/${tmdbId}&s=1&e=1`,
+          `https://framextv.tech/embed/${tmdbId}/1/1`,
           `https://vidlink.pro/tv/${tmdbId}/1/1`,
-          `https://autoembed.co/tv/tmdb/${tmdbId}-1-1`,
-          `https://vidsrc.cc/v2/embed/tv/${tmdbId}/1/1`
+          `https://free-movie-cloud.vercel.app/tv/s1/e1/${tmdbId}`
         ]
       : [
-          `https://www.2embed.cc/embed/${tmdbId}`,
+          `https://framextv.tech/embed/${tmdbId}`,
           `https://vidlink.pro/movie/${tmdbId}`,
-          `https://autoembed.co/movie/tmdb/${tmdbId}`,
-          `https://vidsrc.cc/v2/embed/movie/${tmdbId}`
+          `https://free-movie-cloud.vercel.app/movie/${tmdbId}`
         ];
 
     return res.status(200).json({

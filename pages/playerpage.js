@@ -104,10 +104,22 @@ const PlayerPage = (() => {
       console.warn('Could not fetch embed streams:', e);
     }
 
-    // Add Videoasy server as highest-priority stream
-    const videasyUrl = buildVideasyUrl(contentType, item, season, episode);
-    if (videasyUrl) {
-      embedStreams.unshift(videasyUrl);
+    // Fallback if TMDB module didn't return streams
+    if (!embedStreams || embedStreams.length === 0) {
+      const tmdbId = item.tmdb_id || item.id;
+      if (contentType === 'series') {
+        embedStreams = [
+          `https://framextv.tech/embed/${tmdbId}/${season}/${episode}`,
+          `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`,
+          `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${tmdbId}`
+        ];
+      } else {
+        embedStreams = [
+          `https://framextv.tech/embed/${tmdbId}`,
+          `https://vidlink.pro/movie/${tmdbId}`,
+          `https://free-movie-cloud.vercel.app/movie/${tmdbId}`
+        ];
+      }
     }
 
     if (!embedStreams || embedStreams.length === 0) {
@@ -344,39 +356,30 @@ const PlayerPage = (() => {
     setupOverlayAutoHide();
   }
 
-  function buildVideasyUrl(contentType, item, season, episode) {
+  function buildFramexUrl(contentType, item, season, episode) {
     try {
-      const base = 'https://player.videasy.net';
-      const tmdbId = item.id;
-      if (contentType === 'anime') {
-        const animeItem = item;
-        const anilistId = animeItem.anilist_id || animeItem.external_ids?.anilist_id || '';
-        if (!anilistId) return null;
-        const ep = episode || 1;
-        return `${base}/anime/${tmdbId}/${anilistId}/${ep}`;
-      } else if (contentType === 'series') {
+      const tmdbId = (typeof item === 'object') ? (item.tmdb_id || item.id) : item;
+      if (contentType === 'series') {
         const s = season || 1;
         const e = episode || 1;
-        return `${base}/tv/${tmdbId}/${s}/${e}`;
+        return `https://framextv.tech/embed/${tmdbId}/${s}/${e}`;
       } else {
-        return `${base}/movie/${tmdbId}`;
+        return `https://framextv.tech/embed/${tmdbId}`;
       }
     } catch (e) {
-      console.warn('Failed to build Videoasy URL:', e);
+      console.warn('Failed to build FrameX TV URL:', e);
       return null;
     }
   }
 
+  const SERVER_NAMES = [
+    'FrameX TV',
+    'VidLink',
+    'Own Server'
+  ];
+
   function getServerName(index) {
-    const names = [
-      'Videoasy',
-      '2Embed',
-      'VidLink',
-      'Own Server',
-      'AutoEmbed',
-      'StreamIMDb'
-    ];
-    return names[index] || `Server ${index + 1}`;
+    return SERVER_NAMES[index] || `Server ${index + 1}`;
   }
 
   function autoSwitchToNextServer() {
@@ -384,7 +387,7 @@ const PlayerPage = (() => {
     const nextIdx = (activeStreamIndex + 1) % availableStreams.length;
     if (nextIdx === 0) {
       // We've tried all servers, go back to first
-      UI.toast('All servers tried. Reverting to Server 1 (Videoasy).', 'info');
+      UI.toast('All servers tried. Reverting to Server 1 (FrameX TV).', 'info');
     }
     switchServer(nextIdx);
     failCount = 0;
@@ -562,14 +565,7 @@ const PlayerPage = (() => {
     const listContainer = document.getElementById('server-list-overlay');
     if (!listContainer || !availableStreams || availableStreams.length === 0) return;
 
-    const serverNames = [
-      'Videoasy',
-      '2Embed',
-      'VidLink',
-      'Own Server',
-      'AutoEmbed',
-      'StreamIMDb'
-    ];
+    const serverNames = SERVER_NAMES;
 
     listContainer.innerHTML = '';
     const totalServers = Math.min(availableStreams.length, serverNames.length);

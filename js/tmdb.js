@@ -53,43 +53,32 @@ const TMDB = (() => {
     53: 'Thriller', 10752: 'War', 37: 'Western'
   };
 
-  // ── STREAMING SERVERS (4 Servers Only) ──
-  // 2Embed, VidLink, AutoEmbed, StreamIMDb
+  // ── STREAMING SERVERS (3 Servers Only: FrameX TV (Default), VidLink, Own Server) ──
   const INDIAN_SERVERS = [
-    { name: '2Embed',    url: (id) => `https://www.2embed.cc/embed/${id}` },
+    { name: 'FrameX TV', url: (id) => `https://framextv.tech/embed/${id}` },
     { name: 'VidLink',   url: (id) => `https://vidlink.pro/movie/${id}` },
     { name: 'Own Server',url: (id) => `https://free-movie-cloud.vercel.app/movie/${id}` },
-    { name: 'AutoEmbed', url: (id) => `https://autoembed.co/movie/tmdb/${id}` },
-    { name: 'StreamIMDb',url: (id) => `https://streamimdb.ru/embed/movie/${id}` },
   ];
 
   const INDIAN_TV_SERVERS = [
-    { name: '2Embed',    url: (id, s, e) => `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}` },
+    { name: 'FrameX TV', url: (id, s, e) => `https://framextv.tech/embed/${id}/${s}/${e}` },
     { name: 'VidLink',   url: (id, s, e) => `https://vidlink.pro/tv/${id}/${s}/${e}` },
     { name: 'Own Server',url: (id, s, e) => `https://free-movie-cloud.vercel.app/tv/s${s}/e${e}/${id}` },
-    { name: 'AutoEmbed', url: (id, s, e) => `https://autoembed.co/tv/tmdb/${id}-${s}-${e}` },
-    { name: 'StreamIMDb',url: (id, s, e) => `https://streamimdb.ru/embed/tv/${id}/${s}/${e}` },
   ];
   
   function _buildMovieStreams(tmdbId, imdbId) {
-    const id = imdbId || tmdbId;
     return [
-      `https://www.2embed.cc/embed/${tmdbId}`,
+      `https://framextv.tech/embed/${tmdbId}`,
       `https://vidlink.pro/movie/${tmdbId}`,
       `https://free-movie-cloud.vercel.app/movie/${tmdbId}`,
-      `https://autoembed.co/movie/tmdb/${tmdbId}`,
-      `https://streamimdb.ru/embed/movie/${id}`,
     ];
   }
 
   function _buildTVStreams(tmdbId, imdbId, season = 1, episode = 1) {
-    const id = imdbId || tmdbId;
     return [
-      `https://www.2embed.cc/embedtv/${tmdbId}&s=${season}&e=${episode}`,
+      `https://framextv.tech/embed/${tmdbId}/${season}/${episode}`,
       `https://vidlink.pro/tv/${tmdbId}/${season}/${episode}`,
       `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${tmdbId}`,
-      `https://autoembed.co/tv/tmdb/${tmdbId}-${season}-${episode}`,
-      `https://streamimdb.ru/embed/tv/${id}/${season}/${episode}`,
     ];
   }
 
@@ -127,28 +116,23 @@ const TMDB = (() => {
     };
   }
   
-  // Get ALL embed stream URLs for any TMDB title (4 servers only)
+  // Get ALL embed stream URLs for any TMDB title (3 servers only)
   function getRegionalStreams(itemOrId, season, episode) {
     const id = (typeof itemOrId === 'object') ? itemOrId.tmdb_id || itemOrId.id : itemOrId;
-    const imdbId = (typeof itemOrId === 'object') ? itemOrId.imdb_id || id : id;
 
     if (season != null && episode != null) {
       // TV Series
       return [
-        `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`,
+        `https://framextv.tech/embed/${id}/${season}/${episode}`,
         `https://vidlink.pro/tv/${id}/${season}/${episode}`,
         `https://free-movie-cloud.vercel.app/tv/s${season}/e${episode}/${id}`,
-        `https://player.autoembed.co/embed/tv/${id}/${season}/${episode}`,
-        `https://streamimdb.ru/embed/tv/${imdbId}/${season}/${episode}`,
       ];
     } else {
       // Movies
       return [
-        `https://www.2embed.cc/embed/${id}`,
+        `https://framextv.tech/embed/${id}`,
         `https://vidlink.pro/movie/${id}`,
         `https://free-movie-cloud.vercel.app/movie/${id}`,
-        `https://player.autoembed.co/embed/movie/${id}`,
-        `https://streamimdb.ru/embed/movie/${imdbId}`,
       ];
     }
   }
@@ -346,22 +330,15 @@ const TMDB = (() => {
       const item = normalize(raw, type);
       item.imdb_id = raw.external_ids ? raw.external_ids.imdb_id : null;
 
-      // Rebuild streams using IMDb ID for StreamIMDB
-      if (item.imdb_id) {
-        const sid = item.imdb_id;
-        const tid = item.tmdb_id || item.id;
-        if (type === 'movie') {
-          item.streams = [
-            `https://www.2embed.cc/embed/${tid}`,
-            `https://vidlink.pro/movie/${tid}`,
-            `https://free-movie-cloud.vercel.app/movie/${tid}`,
-            `https://streamimdb.ru/embed/movie/${sid}`,
-            `https://autoembed.co/movie/tmdb/${tid}`,
-            `https://embed.su/embed/movie/${tid}`,
-            `https://dbgo.fun/embed/movie/${tid}`,
-          ];
-          item.stream = item.streams[0];
-        }
+      // Rebuild streams for movie (3 servers only)
+      const tid = item.tmdb_id || item.id;
+      if (type === 'movie') {
+        item.streams = [
+          `https://framextv.tech/embed/${tid}`,
+          `https://vidlink.pro/movie/${tid}`,
+          `https://free-movie-cloud.vercel.app/movie/${tid}`,
+        ];
+        item.stream = item.streams[0];
       }
 
       if (raw.credits) {
@@ -404,13 +381,9 @@ const TMDB = (() => {
                 const sn = seasonNum;
                 const en = ep.episode_number;
                 const epStreams = [
-                  `https://www.2embed.cc/embedtv/${tmdbId}&s=${sn}&e=${en}`,
+                  `https://framextv.tech/embed/${tmdbId}/${sn}/${en}`,
                   `https://vidlink.pro/tv/${tmdbId}/${sn}/${en}`,
                   `https://free-movie-cloud.vercel.app/tv/s${sn}/e${en}/${tmdbId}`,
-                  `https://streamimdb.ru/embed/tv/${tvImdbId}/${sn}/${en}`,
-                  `https://autoembed.co/tv/tmdb/${tmdbId}-${sn}-${en}`,
-                  `https://embed.su/embed/tv/${tmdbId}/${sn}/${en}`,
-                  `https://dbgo.fun/embed/tv/${tmdbId}/${sn}/${en}`,
                 ];
                 return {
                   epNum: en,
